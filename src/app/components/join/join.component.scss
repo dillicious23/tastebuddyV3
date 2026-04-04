@@ -37,7 +37,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 16px 20px;
+    padding: 16px 20px max(env(safe-area-inset-bottom), 24px);
     position: relative;
     z-index: 1;
 }
@@ -56,27 +56,40 @@
     margin-bottom: 24px;
 }
 
+// ── Hidden real input (captures keyboard, visually invisible) ──
+.code-input-hidden {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+    border: none;
+    outline: none;
+    caret-color: transparent;
+}
+
 // ── Code boxes ────────────────────────────────────────────────
 .code-boxes {
     display: flex;
     gap: 10px;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    cursor: text;
 }
 
 .code-box {
-    width: 60px;
-    height: 70px;
-    border-radius: 14px;
+    width: 64px;
+    height: 74px;
+    border-radius: 16px;
     background: var(--card);
     border: 0.5px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 900;
     color: var(--tx7);
-    transition: border-color 200ms;
+    transition: border-color 200ms, background 200ms;
 
     &.filled {
         border-color: var(--blue);
@@ -86,6 +99,7 @@
     &.active {
         border-color: var(--green);
         color: var(--green);
+        background: rgba(74, 222, 128, 0.04);
         animation: codeBlink 1.6s ease-in-out infinite;
     }
 
@@ -133,49 +147,6 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--blue);
-}
-
-// ── Keypad ────────────────────────────────────────────────────
-.keypad {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 0;
-    margin-bottom: 14px;
-}
-
-.key-row {
-    display: flex;
-    gap: 7px;
-    margin-bottom: 7px;
-}
-
-.key {
-    flex: 1;
-    height: 46px;
-    background: var(--card-alt);
-    border: 0.5px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--tx1);
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: filter 80ms;
-
-    &:active {
-        filter: brightness(0.75);
-    }
-
-    &.key-action {
-        background: var(--surface);
-        color: var(--tx5);
-        font-size: 12px;
-    }
 }
 
 // ── Divider ───────────────────────────────────────────────────

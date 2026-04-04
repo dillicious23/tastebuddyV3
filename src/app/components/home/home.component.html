@@ -109,8 +109,8 @@
 
   <!-- ── Top bar ──────────────────────────────────────────────── -->
   <div class="top-bar safe-top">
-    <span class="logo-text">fork<span>up</span></span>
-    <div class="avatar-btn">H</div>
+    <span class="logo-text">taste<span>buddy</span></span>
+    <div class="avatar-btn" (click)="goProfile()">{{ state.username()[0]?.toUpperCase() || '?' }}</div>
   </div>
 
   <!-- ── Compass ─────────────────────────────────────────────── -->
@@ -203,11 +203,12 @@
 
     <!-- Start / Join buttons -->
     <div class="cta-row">
-      <button class="btn-start" (click)="startSession()">
-        <svg width="13" height="13" viewBox="0 0 13 13">
+      <button class="btn-start" (click)="startSession()" [disabled]="creating()">
+        <span *ngIf="creating()" class="spinner" style="width:13px;height:13px;border-width:2px"></span>
+        <svg *ngIf="!creating()" width="13" height="13" viewBox="0 0 13 13">
           <path d="M6.5 1L12 5.2V12H8.5V8.5H4.5V12H1V5.2L6.5 1Z" fill="#052E16" />
         </svg>
-        Start a session
+        {{ creating() ? 'Creating room…' : 'Start a session' }}
       </button>
       <button class="btn-join" (click)="goJoin()">
         <svg width="13" height="13" viewBox="0 0 13 13">

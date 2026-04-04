@@ -16,8 +16,8 @@ import { USERNAME_SUGGESTIONS } from '../../data/mock-data';
   <div class="glow"></div>
 
   <div class="content">
-    <span class="fork-icon">🍴</span>
-    <div class="logo-text">fork<span>up</span></div>
+    <span class="fork-icon">🍽️</span>
+    <div class="logo-text">taste<span>buddy</span></div>
     <p class="tagline">Decide where to eat. Together.</p>
 
     <!-- Username card -->
@@ -69,7 +69,8 @@ export class LaunchComponent {
   private router = inject(Router);
   private stateService = inject(AppStateService);
 
-  username = 'HungryOtter';
+  // Pre-populate from localStorage if returning user
+  username = localStorage.getItem('tb_username') || '';
   focused = signal(false);
   suggestions = USERNAME_SUGGESTIONS;
 
@@ -80,7 +81,7 @@ export class LaunchComponent {
   }
 
   proceed(): void {
-    const name = this.username.trim() || 'HungryOtter';
+    const name = this.username.trim() || USERNAME_SUGGESTIONS[0];
     this.stateService.setUsername(name);
     this.router.navigate(['/tabs/home']);
   }

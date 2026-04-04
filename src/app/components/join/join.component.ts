@@ -1,37 +1,42 @@
 // src/app/components/join/join.component.ts
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { AppStateService } from '../../services/app-state.service';
 
 @Component({
   selector: 'app-join',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, FormsModule, IonicModule],
   templateUrl: './join.component.html',
   styleUrls: ['./join.component.scss'],
 })
-export class JoinComponent {
+export class JoinComponent implements AfterViewInit {
   private router = inject(Router);
+  private state = inject(AppStateService);
 
-  chars = signal<string[]>([]);
+  @ViewChild('codeInput') codeInputRef!: ElementRef<HTMLInputElement>;
+
+  code = signal('');
   loading = signal(false);
   error = signal(false);
 
-  readonly PAD = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['A–Z', '0', '⌫'],
-  ];
+  ngAfterViewInit(): void {
+    // Auto-focus the input so the keyboard opens immediately
+    setTimeout(() => this.codeInputRef?.nativeElement.focus(), 150);
+  }
 
-  get displayChars(): (string | null)[] {
-    return Array.from({ length: 4 }, (_, i) => this.chars()[i] ?? null);
+  // Derive display chars from the code string
+  get chars(): string[] {
+    return this.code().toUpperCase().slice(0, 4).split('');
   }
 
   boxClass(i: number): string {
-    const filled = i < this.chars().length;
-    const active = i === this.chars().length;
+    const len = this.chars.length;
+    const filled = i < len;
+    const active = i === len;
     if (this.error()) return 'code-box error';
     if (filled) return 'code-box filled';
     if (active) return 'code-box active';
@@ -39,30 +44,39 @@ export class JoinComponent {
   }
 
   boxChar(i: number): string {
-    if (this.chars()[i]) return this.chars()[i];
-    return i === this.chars().length ? '|' : '_';
+    return this.chars[i] ?? (i === this.chars.length ? '|' : '_');
   }
 
-  tap(key: string): void {
-    if (key === '⌫') { this.chars.update(c => c.slice(0, -1)); this.error.set(false); return; }
-    if (key === 'A–Z') return; // open alpha keyboard in production
-    if (this.chars().length >= 4) return;
+  onInput(event: Event): void {
+    const raw = (event.target as HTMLInputElement).value;
+    const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    this.code.set(clean);
     this.error.set(false);
-    this.chars.update(c => [...c, key]);
-    if (this.chars().length === 4) this.submit();
+
+    if (clean.length === 4) {
+      this.submit();
+    }
   }
 
   async submit(): Promise<void> {
+    const code = this.code();
+    if (code.length < 4 || this.loading()) return;
+
     this.loading.set(true);
-    await new Promise(r => setTimeout(r, 900));
-    const code = this.chars().join('');
-    if (code === '7X4K') {
+    const success = await this.state.joinSession(code);
+    this.loading.set(false);
+
+    if (success) {
       this.router.navigate(['/tabs/swipe']);
     } else {
-      this.loading.set(false);
       this.error.set(true);
-      this.chars.set([]);
+      this.code.set('');
+      setTimeout(() => this.codeInputRef?.nativeElement.focus(), 50);
     }
+  }
+
+  focusInput(): void {
+    this.codeInputRef?.nativeElement.focus();
   }
 
   goBack(): void { this.router.navigate(['/tabs/home']); }

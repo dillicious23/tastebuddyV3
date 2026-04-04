@@ -21,9 +21,10 @@ export class HomeComponent {
   // UI state
   showEndDialog = signal(false);
   showSwipeAgainSheet = signal(false);
+  creating = signal(false);
   selectedGroup = signal<ForkupGroup | null>(null);
   newRoomCode = signal('');
-  mapPulse = signal(0); // drives pulse animation via requestAnimationFrame
+  mapPulse = signal(0);
   private _rafId = 0;
 
   constructor() {
@@ -81,13 +82,23 @@ export class HomeComponent {
   }
 
   // ── Actions ────────────────────────────────────────────────
-  startSession(): void {
-    const code = this.state.startSession();
-    this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
+  async startSession(): Promise<void> {
+    if (this.creating()) return;
+    this.creating.set(true);
+    try {
+      const code = await this.state.startSession();
+      this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
+    } finally {
+      this.creating.set(false);
+    }
   }
 
   goJoin(): void {
     this.router.navigate(['/join']);
+  }
+
+  goProfile(): void {
+    this.router.navigate(['/tabs/profile']);
   }
 
   goRejoin(): void {
@@ -98,8 +109,8 @@ export class HomeComponent {
     this.showEndDialog.set(true);
   }
 
-  doEnd(): void {
-    this.state.endSession();
+  async doEnd(): Promise<void> {
+    await this.state.endSession();
     this.showEndDialog.set(false);
   }
 
@@ -109,12 +120,15 @@ export class HomeComponent {
     this.showSwipeAgainSheet.set(true);
   }
 
-  confirmSwipeAgain(): void {
+  async confirmSwipeAgain(): Promise<void> {
     this.showSwipeAgainSheet.set(false);
-    const g = this.selectedGroup();
-    if (g) {
-      this.state.startSession();
+    if (!this.selectedGroup()) return;
+    this.creating.set(true);
+    try {
+      await this.state.startSession();
       this.router.navigate(['/tabs/swipe']);
+    } finally {
+      this.creating.set(false);
     }
   }
 

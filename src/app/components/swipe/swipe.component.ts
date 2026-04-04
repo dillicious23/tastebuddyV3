@@ -1,14 +1,13 @@
 // src/app/components/swipe/swipe.component.ts
 import {
-  Component, OnInit, OnDestroy, inject, signal, computed,
-  ElementRef, ViewChild, HostListener, ChangeDetectorRef
+  Component, OnInit, OnDestroy, inject, signal, computed, effect,
+  ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { Restaurant } from '../../models/restaurant.model';
-import { RESTAURANTS, MEMBERS } from '../../data/mock-data';
 import { CardContentComponent } from './card-content.component';
 
 type SwipeDir = 'left' | 'right' | null;
@@ -25,8 +24,8 @@ export class SwipeComponent implements OnInit, OnDestroy {
   private state = inject(AppStateService);
   private cdr = inject(ChangeDetectorRef);
 
-  // Card data
-  deck = [...RESTAURANTS];
+  // Card data — driven from Firebase via state.deck signal
+  get deck(): Restaurant[] { return this.state.deck(); }
   topIdx = signal(0);
 
   // Drag state
@@ -58,11 +57,21 @@ export class SwipeComponent implements OnInit, OnDestroy {
   matchCount = signal(0);
   showLeaveConfirm = signal(false);
 
-  // Session info (passed via router state in production; using service here)
+  // Session info
   roomCode = this.state.activeRoomCode;
   isSolo = this.state.isSolo;
   members = this.state.activeMembers;
   isWaiting = this.state.isWaiting;
+
+  // Navigate to /match when Firebase detects a full consensus
+  private _matchWatcher = effect(() => {
+    const match = this.state.latestMatch();
+    const waiting = this.state.isWaiting();
+    if (match && !waiting) {
+      this.state.addMatch();
+      this.router.navigate(['/match']);
+    }
+  }, { allowSignalWrites: true });
 
   // Selected card (behind top — for detail sheet)
   get currentCard(): Restaurant {
@@ -85,16 +94,7 @@ export class SwipeComponent implements OnInit, OnDestroy {
     return `${m[0].username}, ${m[1].username} & ${m[2].username}`;
   }
 
-  ngOnInit(): void {
-    // Simulate a friend joining after 3 s if solo (demo only)
-    if (this.state.isSolo()) {
-      setTimeout(() => {
-        this.state.friendJoined(MEMBERS[1]);
-        this.showToast.set(true);
-        setTimeout(() => this.showToast.set(false), 3500);
-      }, 3000);
-    }
-  }
+  ngOnInit(): void { }
 
   ngOnDestroy(): void { }
 
@@ -131,8 +131,13 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
   // ── Core swipe logic ──────────────────────────────────────
   swipeCard(dir: 'left' | 'right'): void {
-    if (this.isBusy) return;
+    if (this.isBusy || !this.deck.length) return;
     this.isBusy = true;
+
+    const swipedRestaurant = this.currentCard;
+
+    // Record to Firebase
+    this.state.recordSwipe(swipedRestaurant.id, dir === 'right' ? 'yes' : 'no');
 
     // Snap card off screen
     const targetX = dir === 'right' ? window.innerWidth * 1.4 : -window.innerWidth * 1.4;
@@ -141,13 +146,6 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       const next = (this.topIdx() + 1) % this.deck.length;
-
-      // Check for match (demo: 3rd right-swipe = match on Sakura)
-      if (dir === 'right' && this.matchCount() === 0 && next >= 2 && !this.isSolo()) {
-        this.matchCount.update(n => n + 1);
-        this.state.addMatch();
-        this.router.navigate(['/match']);
-      }
 
       this.topIdx.set(next);
       this.dragX.set(0);
@@ -175,8 +173,8 @@ export class SwipeComponent implements OnInit, OnDestroy {
   }
 
   // ── Waiting room ──────────────────────────────────────────
-  beginSwiping(): void {
-    this.state.startSwiping();
+  async beginSwiping(): Promise<void> {
+    await this.state.startSwiping();
   }
 
   shareCode(): void {
@@ -187,8 +185,9 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
   // ── Leave ─────────────────────────────────────────────────
   confirmLeave(): void { this.showLeaveConfirm.set(true); }
-  doLeave(): void {
+  async doLeave(): Promise<void> {
     this.showLeaveConfirm.set(false);
+    await this.state.endSession();
     this.router.navigate(['/tabs/home']);
   }
 

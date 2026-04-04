@@ -13,9 +13,24 @@
     <h1 class="join-title">Join a session</h1>
     <p class="join-sub">Enter the room code your friend shared</p>
 
-    <!-- Code boxes -->
-    <div class="code-boxes">
-      <div *ngFor="let i of [0,1,2,3]" [ngClass]="boxClass(i)" class="code-box">
+    <!-- Hidden real input — captures system keyboard -->
+    <input
+      #codeInput
+      class="code-input-hidden"
+      type="text"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="characters"
+      spellcheck="false"
+      maxlength="4"
+      [value]="code()"
+      (input)="onInput($event)"
+    />
+
+    <!-- Visual code boxes — tapping them re-focuses the input -->
+    <div class="code-boxes" (click)="focusInput()">
+      <div *ngFor="let i of [0,1,2,3]" [ngClass]="boxClass(i)">
         {{ boxChar(i) }}
       </div>
     </div>
@@ -30,7 +45,7 @@
       Room not found · double-check the code
     </div>
     <div class="feedback hint" *ngIf="!error()">
-      Letters and numbers · not case sensitive
+      Tap above and type your 4-character code
     </div>
 
     <!-- Loading state -->
@@ -38,23 +53,23 @@
       <div class="spinner"></div>
       <div>
         <div class="loading-title">Joining room…</div>
-        <div class="loading-sub" style="font-size:10px;color:var(--tx5)">{{ chars().join('') }}</div>
+        <div style="font-size:10px;color:var(--tx5)">{{ code() }}</div>
       </div>
     </div>
 
-    <!-- Keypad -->
-    <div class="keypad">
-      <ng-container *ngFor="let row of PAD">
-        <div class="key-row">
-          <button *ngFor="let k of row" class="key" [class.key-action]="k === '⌫' || k === 'A–Z'" (click)="tap(k)">
-            {{ k }}
-          </button>
-        </div>
-      </ng-container>
-    </div>
+    <!-- Join button (fallback for when auto-submit doesn't fire) -->
+    <button
+      class="btn-primary"
+      style="margin-top:auto"
+      [disabled]="code().length < 4 || loading()"
+      (click)="submit()"
+    >
+      <span *ngIf="loading()" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+      {{ loading() ? 'Joining…' : 'Join room' }}
+    </button>
 
     <!-- Divider -->
-    <div class="divider">
+    <div class="divider" style="margin-top:16px">
       <div></div><span>or</span>
       <div></div>
     </div>
@@ -75,4 +90,5 @@
       </div>
     </div>
   </div>
+
 </div>
