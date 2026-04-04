@@ -1,0 +1,76 @@
+// src/app/app.component.scss
+
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: var(--surface);
+}
+
+.tab-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+// ── Bottom navigation ──────────────────────────────────────────
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 7px 0 max(env(safe-area-inset-bottom), 16px);
+    background: #0A0D14;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 8px;
+    min-width: 56px;
+    transition: opacity 120ms;
+
+    span {
+        font-size: 9px;
+        color: var(--tx8);
+        font-family: inherit;
+    }
+
+    &.active-green span {
+        color: #4ADE80;
+        font-weight: 600;
+    }
+
+    &.active-blue span {
+        color: #60A5FA;
+        font-weight: 600;
+    }
+
+    &.active-purple span {
+        color: #A78BFA;
+        font-weight: 600;
+    }
+
+    &.nav-disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    &:active {
+        opacity: 0.7;
+    }
+}

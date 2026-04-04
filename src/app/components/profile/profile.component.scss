@@ -1,0 +1,330 @@
+// src/app/components/profile/profile.component.scss
+
+:host {
+    display: block;
+    height: 100%;
+}
+
+.profile-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--surface);
+}
+
+// ── Hero section ──────────────────────────────────────────────
+.hero {
+    padding: max(env(safe-area-inset-top), 12px) 18px 14px;
+    text-align: center;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+// Avatar
+.avatar-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.avatar-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--blue-bg);
+    border: 3px solid var(--blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    line-height: 1;
+}
+
+.avatar-edit {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #1C2A3C;
+    border: 2px solid var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+// Username
+.username-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 2px;
+}
+
+.username-text {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    color: var(--tx1);
+}
+
+.username-hint {
+    font-size: 10px;
+    color: var(--tx7);
+    margin-bottom: 10px;
+}
+
+// Edit state
+.edit-row {
+    margin-bottom: 8px;
+}
+
+.edit-input-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 1.5px solid var(--green);
+    border-radius: 14px;
+    padding: 10px 13px;
+    animation: codeBlink 1.8s ease-in-out infinite;
+}
+
+.edit-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--tx1);
+    font-family: inherit;
+    text-align: center;
+
+    &::placeholder {
+        color: var(--tx6);
+    }
+}
+
+.edit-cursor {
+    width: 2px;
+    height: 20px;
+    background: var(--green);
+    border-radius: 1px;
+    flex-shrink: 0;
+    animation: pulseDot 1s ease-in-out infinite;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.btn-save {
+    flex: 1;
+    height: 38px;
+    background: rgba(74, 222, 128, 0.12);
+    border: 0.5px solid rgba(74, 222, 128, 0.28);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-cancel {
+    flex: 1;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tx3);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+// Suggestions
+.suggestions-row {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    background: var(--card-alt);
+    border: 0.5px solid rgba(255, 255, 255, 0.07);
+    border-radius: 20px;
+    padding: 5px 11px;
+    font-size: 11px;
+    color: var(--tx4);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 100ms;
+
+    &.chip-active {
+        background: rgba(74, 222, 128, 0.12);
+        border-color: rgba(74, 222, 128, 0.30);
+        color: var(--green);
+    }
+
+    &.chip-shuffle {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--green);
+        background: rgba(74, 222, 128, 0.08);
+        border-color: rgba(74, 222, 128, 0.20);
+    }
+}
+
+// Stats
+.stats-row {
+    display: flex;
+    gap: 8px;
+}
+
+.stat-box {
+    flex: 1;
+    background: var(--card-alt);
+    border-radius: 12px;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.stat-val {
+    font-size: 19px;
+    font-weight: 900;
+
+    &.green {
+        color: var(--green);
+    }
+
+    &.purple {
+        color: var(--purple);
+    }
+
+    &.blue {
+        color: var(--blue);
+    }
+}
+
+.stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--tx7);
+}
+
+// ── Prefs scroll area ─────────────────────────────────────────
+.prefs-scroll {
+    flex: 1;
+    padding: 11px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+// ── Pref group ────────────────────────────────────────────────
+.pref-group {
+    overflow: hidden;
+}
+
+.pref-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 12px;
+}
+
+.pref-link {
+    cursor: pointer;
+
+    &:active {
+        background: rgba(255, 255, 255, 0.03);
+    }
+}
+
+.pref-label {
+    font-size: 12px;
+    color: var(--tx2);
+    flex: 1;
+}
+
+.pref-value {
+    font-size: 11px;
+    color: var(--tx3);
+}
+
+.pref-divider {
+    height: 0.5px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-left: 36px;
+}
+
+// ── Toggle ────────────────────────────────────────────────────
+.toggle-track {
+    width: 38px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--green);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 200ms;
+
+    &.off {
+        background: var(--card-alt);
+        border: 0.5px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .toggle-thumb {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        transition: right 200ms, left 200ms;
+    }
+
+    &.off .toggle-thumb {
+        right: auto;
+        left: 3px;
+    }
+}
+
+// ── Identity note ─────────────────────────────────────────────
+.identity-note {
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    background: rgba(22, 32, 64, 0.20);
+    border: 0.5px solid rgba(96, 165, 250, 0.13);
+    border-radius: 14px;
+}
+
+.identity-text {
+    font-size: 10px;
+    color: var(--tx5);
+    line-height: 1.6;
+}

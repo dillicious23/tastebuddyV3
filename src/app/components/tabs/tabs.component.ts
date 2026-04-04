@@ -1,4 +1,17 @@
-<!-- src/app/app.component.html -->
+// src/app/components/tabs/tabs.component.ts
+import { Component, inject } from '@angular/core';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
+import { filter } from 'rxjs/operators';
+import { AppStateService } from '../../services/app-state.service';
+import { NavTab } from '../../models/restaurant.model';
+
+@Component({
+  selector: 'app-tabs',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule, IonicModule],
+  template: `
 <div class="app-shell">
 
   <!-- Tab content — fills remaining height -->
@@ -62,3 +75,34 @@
 
   </nav>
 </div>
+  `,
+  styleUrls: ['../../app.component.scss'],
+})
+export class TabsComponent {
+  private router = inject(Router);
+  private state = inject(AppStateService);
+
+  activeTab: NavTab = 'home';
+
+  constructor() {
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe((e: any) => {
+        const url: string = e.urlAfterRedirects ?? e.url;
+        if (url.includes('/swipe')) this.activeTab = 'swipe';
+        else if (url.includes('/groups')) this.activeTab = 'groups';
+        else if (url.includes('/profile')) this.activeTab = 'profile';
+        else this.activeTab = 'home';
+      });
+  }
+
+  navigate(tab: NavTab): void {
+    if (tab === 'swipe' && !this.state.hasActiveSession()) return;
+    this.activeTab = tab;
+    this.router.navigate(['/tabs', tab]);
+  }
+
+  get swipeDisabled(): boolean {
+    return !this.state.hasActiveSession();
+  }
+}

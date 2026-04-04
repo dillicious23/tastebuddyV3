@@ -1,37 +1,765 @@
-/*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
- */
+/* ================================================================
+   FORKUP · GLOBAL STYLES
+   All CSS custom properties, animations, resets, and utilities.
+   Screen-specific styles live in each component's .scss file.
+   ================================================================ */
 
-/* Core CSS required for Ionic components to work properly */
-@import "@ionic/angular/css/core.css";
+/* ── Base reset ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
 
-/* Basic CSS for apps built with Ionic */
-@import "@ionic/angular/css/normalize.css";
-@import "@ionic/angular/css/structure.css";
-@import "@ionic/angular/css/typography.css";
-@import "@ionic/angular/css/display.css";
+:root {
+    /* Brand */
+    --green: #4ADE80;
+    --green-dark: #22C55E;
+    --green-ink: #052E16;
+    --green-bg: #091808;
+    --green-bg-light: #0A1A10;
 
-/* Optional CSS utils that can be commented out */
-@import "@ionic/angular/css/padding.css";
-@import "@ionic/angular/css/float-elements.css";
-@import "@ionic/angular/css/text-alignment.css";
-@import "@ionic/angular/css/text-transformation.css";
-@import "@ionic/angular/css/flex-utils.css";
+    /* Accents */
+    --blue: #60A5FA;
+    --blue-bg: #162040;
+    --purple: #A78BFA;
+    --purple-bg: #1E1030;
+    --amber: #F59E0B;
+    --amber-bg: #1A1208;
+    --red: #F87171;
+    --star: #F5C518;
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
+    /* Backgrounds */
+    --bg: #07090F;
+    --surface: #0B0F1A;
+    --card: #141927;
+    --card-alt: #101520;
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+    /* Map colours */
+    --map-bg: #131A24;
+    --map-block: #151E2A;
+    --map-street: #0D1520;
+    --map-water: #0C1A28;
+    --map-park: #0E1E14;
+
+    /* Text */
+    --tx1: #F1F5F9;
+    --tx2: #94A3B8;
+    --tx3: #64748B;
+    --tx4: #475569;
+    --tx5: #334155;
+    --tx6: #2D3748;
+    --tx7: #1E293B;
+    --tx8: #1A2232;
+
+    /* Borders */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-light: rgba(255, 255, 255, 0.10);
+    --border-dim: rgba(255, 255, 255, 0.07);
+
+    /* Avatar member backgrounds */
+    --av0-fg: #4ADE80;
+    --av0-bg: #1A3020;
+    --av1-fg: #60A5FA;
+    --av1-bg: #162040;
+    --av2-fg: #A78BFA;
+    --av2-bg: #1E1030;
+    --av3-fg: #F59E0B;
+    --av3-bg: #1A1208;
+
+    /* Ionic overrides */
+    --ion-background-color: var(--surface);
+    --ion-text-color: var(--tx1);
+    --ion-color-primary: var(--green);
+    --ion-color-primary-contrast: var(--green-ink);
+    --ion-tab-bar-background: #0A0D14;
+    --ion-tab-bar-border-color: rgba(255, 255, 255, 0.06);
+    --ion-font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Global HTML / body ─────────────────────────────────────── */
+html,
+body {
+    width: 100vw;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--tx1);
+    font-family: var(--ion-font-family);
+    -webkit-font-smoothing: antialiased;
+}
+
+ion-app {
+    background: var(--bg);
+}
+
+/* ── Scrollable areas ────────────────────────────────────────── */
+.scroll-area {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes rpl {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(3.2);
+        opacity: 0;
+    }
+}
+
+@keyframes bob {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes matchPop {
+    0% {
+        transform: scale(0.72);
+        opacity: 0;
+    }
+
+    70% {
+        transform: scale(1.06);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes cfFall {
+    0% {
+        transform: translateY(-8px) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(120px) rotate(420deg);
+        opacity: 0;
+    }
+}
+
+@keyframes toastDrop {
+    0% {
+        transform: translateY(-24px) scale(0.94);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes slideUp {
+    0% {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes codeBlink {
+
+    0%,
+    100% {
+        border-color: var(--green);
+    }
+
+    50% {
+        border-color: rgba(74, 222, 128, 0.18);
+    }
+}
+
+@keyframes pulseDot {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CARD CLASSES
+   ═══════════════════════════════════════════════════════════════ */
+
+.frosted {
+    background: rgba(11, 15, 26, 0.86);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.green-card {
+    background: var(--green-bg);
+    border: 0.5px solid rgba(74, 222, 128, 0.28);
+}
+
+.ghost-card {
+    background: var(--card-alt);
+    border: 0.5px solid rgba(255, 255, 255, 0.07);
+}
+
+.card-base {
+    background: var(--card);
+    border: 0.5px solid rgba(255, 255, 255, 0.10);
+}
+
+/* ── Border radius helpers ──────────────────────────────────── */
+.br-sm {
+    border-radius: 12px;
+}
+
+.br-md {
+    border-radius: 14px;
+}
+
+.br-lg {
+    border-radius: 18px;
+}
+
+.br-xl {
+    border-radius: 22px;
+}
+
+.br-xxl {
+    border-radius: 26px;
+}
+
+.br-full {
+    border-radius: 999px;
+}
+
+.br-sheet {
+    border-radius: 24px 24px 0 0;
+}
+
+/* ── Typography helpers ─────────────────────────────────────── */
+.text-green {
+    color: var(--green);
+}
+
+.text-blue {
+    color: var(--blue);
+}
+
+.text-purple {
+    color: var(--purple);
+}
+
+.text-amber {
+    color: var(--amber);
+}
+
+.text-red {
+    color: var(--red);
+}
+
+.text-dim {
+    color: var(--tx4);
+}
+
+.text-muted {
+    color: var(--tx3);
+}
+
+.text-ghost {
+    color: var(--tx5);
+}
+
+.text-dark {
+    color: var(--tx7);
+}
+
+.label-caps {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--tx7);
+}
+
+/* ── Pill ────────────────────────────────────────────────────── */
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 4px 11px;
+    font-size: 11px;
+    color: var(--tx4);
+    background: rgba(255, 255, 255, 0.06);
+    border: 0.5px solid rgba(255, 255, 255, 0.09);
+}
+
+.pill-green {
+    color: var(--green);
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.18);
+}
+
+.pill-blue {
+    color: var(--blue);
+    background: rgba(96, 165, 250, 0.08);
+    border-color: rgba(96, 165, 250, 0.18);
+}
+
+.pill-red {
+    color: var(--red);
+    background: rgba(248, 113, 113, 0.07);
+    border-color: rgba(248, 113, 113, 0.18);
+}
+
+.pill-amber {
+    color: var(--amber);
+    background: rgba(245, 158, 11, 0.09);
+    border-color: rgba(245, 158, 11, 0.22);
+}
+
+/* ── Swipe badges ────────────────────────────────────────────── */
+.swipe-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    padding: 10px 22px;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    border: 3px solid;
+    pointer-events: none;
+    z-index: 20;
+
+    &.like {
+        color: var(--green);
+        border-color: var(--green);
+        background: rgba(74, 222, 128, 0.10);
+        transform: translate(-50%, -55%) rotate(-10deg);
+    }
+
+    &.nope {
+        color: var(--red);
+        border-color: var(--red);
+        background: rgba(248, 113, 113, 0.10);
+        transform: translate(-50%, -55%) rotate(10deg);
+    }
+}
+
+/* ── Confetti pieces ─────────────────────────────────────────── */
+.cf {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    animation: cfFall 3s ease-in infinite;
+}
+
+/* ── Avatar stack ────────────────────────────────────────────── */
+.avatar-stack {
+    display: flex;
+
+    .avatar {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        flex-shrink: 0;
+        border: 1.5px solid var(--surface);
+
+        &:not(:first-child) {
+            margin-left: -8px;
+        }
+
+        &.av-0 {
+            background: var(--av0-bg);
+            color: var(--av0-fg);
+        }
+
+        &.av-1 {
+            background: var(--av1-bg);
+            color: var(--av1-fg);
+        }
+
+        &.av-2 {
+            background: var(--av2-bg);
+            color: var(--av2-fg);
+        }
+
+        &.av-3 {
+            background: var(--av3-bg);
+            color: var(--av3-fg);
+        }
+    }
+}
+
+/* ── Primary + secondary buttons ────────────────────────────── */
+.btn-primary {
+    width: 100%;
+    background: var(--green);
+    border: none;
+    border-radius: 16px;
+    padding: 14px 20px;
+    font-size: 14px;
+    color: var(--green-ink);
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-family: inherit;
+    transition: filter 120ms;
+
+    &:active {
+        filter: brightness(0.9);
+    }
+}
+
+.btn-secondary {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 0.5px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    padding: 13px 20px;
+    font-size: 13px;
+    color: var(--tx3);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 120ms;
+
+    &:active {
+        filter: brightness(0.9);
+    }
+}
+
+.btn-danger {
+    width: 100%;
+    background: rgba(248, 113, 113, 0.07);
+    border: 0.5px solid rgba(248, 113, 113, 0.18);
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-size: 12px;
+    color: var(--red);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* ── Section header ──────────────────────────────────────────── */
+.section-header {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--tx7);
+    margin-bottom: 8px;
+    padding: 2px 2px 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ── Online dot ─────────────────────────────────────────────── */
+.online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: glow 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+.toast-container {
+    position: absolute;
+    top: 56px;
+    left: 10px;
+    right: 10px;
+    z-index: 100;
+    animation: toastDrop 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) 0.3s both;
+}
+
+/* ── Bottom sheet overlay ────────────────────────────────────── */
+.sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    animation: fadeIn 0.2s ease;
+
+    .sheet-body {
+        background: var(--card);
+        border-radius: 24px 24px 0 0;
+        border: 0.5px solid rgba(255, 255, 255, 0.10);
+        padding: 16px 17px max(env(safe-area-inset-bottom), 24px);
+        animation: slideUp 0.3s ease-out;
+
+        .sheet-handle {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.14);
+            margin: 0 auto 14px;
+        }
+    }
+}
+
+/* ── Screen layout base ─────────────────────────────────────── */
+.screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: var(--surface);
+    overflow: hidden;
+    position: relative;
+}
+
+/* ── Map fill ────────────────────────────────────────────────── */
+.map-fill {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+}
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+.spinner {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(96, 165, 250, 0.20);
+    border-top-color: var(--blue);
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+/* ── Slider track ────────────────────────────────────────────── */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--card-alt);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+
+    &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--green);
+        border: 3px solid var(--surface);
+        box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3);
+        cursor: pointer;
+    }
+
+    &::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--green);
+        border: 3px solid var(--surface);
+        cursor: pointer;
+    }
+}
+
+/* ── Toggle ─────────────────────────────────────────────────── */
+.toggle-track {
+    width: 38px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--green);
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background 200ms;
+
+    &.off {
+        background: var(--card-alt);
+        border: 0.5px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .toggle-thumb {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        transition: right 200ms;
+    }
+
+    &.off .toggle-thumb {
+        right: auto;
+        left: 3px;
+    }
+}
+
+/* ── Ionic tab bar overrides ─────────────────────────────────── */
+ion-tab-bar {
+    --background: #0A0D14;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: env(safe-area-inset-bottom);
+
+    ion-tab-button {
+        --color: var(--tx8);
+        --color-selected: var(--green);
+        font-size: 9px;
+        font-weight: 600;
+
+        &.tab-groups {
+            --color-selected: var(--purple);
+        }
+
+        &.tab-swipe-disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+    }
+}
+
+/* ── Safe area helpers ───────────────────────────────────────── */
+.safe-top {
+    padding-top: env(safe-area-inset-top, 20px);
+}
+
+.safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* ── Detail info row ─────────────────────────────────────────── */
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    margin-bottom: 5px;
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+/* ── Code boxes (join screen) ────────────────────────────────── */
+.code-box {
+    width: 60px;
+    height: 70px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--tx4);
+    transition: border-color 200ms;
+
+    &.filled {
+        border-color: var(--blue);
+        color: var(--blue);
+    }
+
+    &.active {
+        border-color: var(--green);
+        color: var(--green);
+        animation: codeBlink 1.6s ease-in-out infinite;
+    }
+
+    &.error {
+        border-color: rgba(248, 113, 113, 0.5);
+        color: var(--red);
+        background: rgba(248, 113, 113, 0.08);
+    }
+}
+
+/* ── Group row (session history) ─────────────────────────────── */
+.history-row {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 11px 12px;
+
+    &.no-match {
+        opacity: 0.55;
+    }
+}

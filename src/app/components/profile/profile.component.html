@@ -1,0 +1,159 @@
+<!-- src/app/components/profile/profile.component.html -->
+<div class="screen profile-screen">
+
+  <!-- ── Avatar + name + stats ─────────────────────────────── -->
+  <div class="hero safe-top">
+
+    <!-- Avatar -->
+    <div class="avatar-wrap">
+      <div class="avatar-circle">🦦</div>
+      <div class="avatar-edit">
+        <svg width="10" height="10" viewBox="0 0 10 10">
+          <path d="M7 1.5L8.5 3L3.5 8H2V6.5L7 1.5Z" stroke="#64748B" stroke-width="1" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Username — view state -->
+    <ng-container *ngIf="!editing()">
+      <button class="username-btn" (click)="startEdit()">
+        <span class="username-text">{{ state.username() }}</span>
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <path d="M9.5 2L11.5 4L4.5 11H2.5V9L9.5 2Z" stroke="#475569" stroke-width="1.1" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+      <p class="username-hint">tap to edit</p>
+    </ng-container>
+
+    <!-- Username — edit state -->
+    <ng-container *ngIf="editing()">
+      <div class="edit-row">
+        <div class="edit-input-wrap">
+          <input class="edit-input" type="text" [(ngModel)]="editedName" (ngModelChange)="editedName.set($event)"
+            [value]="editedName()" autofocus placeholder="Username" />
+          <span class="edit-cursor"></span>
+        </div>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-save" (click)="saveEdit()">Save</button>
+        <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+      </div>
+      <div class="suggestions-row">
+        <p class="label-caps" style="margin-bottom:7px">Or pick one</p>
+        <div class="chips-wrap">
+          <button *ngFor="let s of suggestions" class="chip" [class.chip-active]="editedName() === s"
+            (click)="pickSuggestion(s)">
+            {{ s }}
+          </button>
+          <button class="chip chip-shuffle" (click)="shuffle()">
+            <svg width="9" height="9" viewBox="0 0 9 9">
+              <path d="M7.5 4.5A3 3 0 1 1 4.5 1.5M4.5 1.5V0M4.5 1.5L3 3M4.5 1.5L6 3" stroke="#4ADE80" stroke-width="1"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Shuffle
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <span class="stat-val green">47</span>
+        <span class="stat-label">Swipes</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-val purple">12</span>
+        <span class="stat-label">Matches</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-val blue">8</span>
+        <span class="stat-label">Sessions</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Preferences list ───────────────────────────────────── -->
+  <div class="prefs-scroll scroll-area">
+
+    <p class="section-header">Preferences</p>
+
+    <div class="pref-group ghost-card br-md">
+
+      <!-- Location toggle -->
+      <div class="pref-row">
+        <svg width="15" height="15" viewBox="0 0 15 15">
+          <path d="M7.5 1C5 1 3 3.2 3 5.6C3 8.6 7.5 13 7.5 13S12 8.6 12 5.6C12 3.2 10 1 7.5 1Z" stroke="#60A5FA"
+            stroke-width="1.1" />
+          <circle cx="7.5" cy="5.6" r="1.6" fill="#60A5FA" />
+        </svg>
+        <span class="pref-label">Location</span>
+        <div class="toggle-track" [class.off]="!locationOn()" (click)="locationOn.set(!locationOn())">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <div class="pref-divider"></div>
+
+      <!-- Notifications toggle -->
+      <div class="pref-row">
+        <svg width="15" height="15" viewBox="0 0 15 15">
+          <path d="M7.5 1C5.8 1 4.5 2.6 4.5 4.4V7.4L3.8 9H11.2L10.5 7.4V4.4C10.5 2.6 9.2 1 7.5 1Z" stroke="#A78BFA"
+            stroke-width="1.1" />
+          <path d="M6.3 9.8C6.5 10.5 7 11 7.5 11S8.5 10.5 8.7 9.8" stroke="#A78BFA" stroke-width="1.1"
+            stroke-linecap="round" />
+        </svg>
+        <span class="pref-label">Notifications</span>
+        <div class="toggle-track" [class.off]="!notificationsOn()" (click)="notificationsOn.set(!notificationsOn())">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <div class="pref-divider"></div>
+
+      <!-- Search radius → navigates -->
+      <div class="pref-row pref-link" (click)="goPreferences('radius')">
+        <svg width="15" height="15" viewBox="0 0 15 15">
+          <circle cx="7.5" cy="7.5" r="5.5" stroke="#64748B" stroke-width="1.1" />
+          <path d="M7.5 4.5V7.5L9.5 9.5" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
+        </svg>
+        <span class="pref-label">Search radius</span>
+        <span class="pref-value">{{ radiusLabel }}</span>
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M4 2l4 4-4 4" stroke="#1E293B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+
+      <div class="pref-divider"></div>
+
+      <!-- Cuisine filters → navigates -->
+      <div class="pref-row pref-link" (click)="goPreferences('cuisine')">
+        <svg width="15" height="15" viewBox="0 0 15 15">
+          <rect x="2" y="2" width="11" height="11" rx="2" stroke="#64748B" stroke-width="1.1" />
+          <path d="M5.5 7.5h4M7.5 5.5v4" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
+        </svg>
+        <span class="pref-label">Cuisine filters</span>
+        <span class="pref-value">All</span>
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M4 2l4 4-4 4" stroke="#1E293B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Device identity note -->
+    <div class="identity-note">
+      <svg width="13" height="13" viewBox="0 0 13 13" style="flex-shrink:0;margin-top:1px">
+        <circle cx="6.5" cy="6.5" r="5" stroke="#60A5FA" stroke-width="1" />
+        <path d="M6.5 6v3" stroke="#60A5FA" stroke-width="1.3" stroke-linecap="round" />
+        <circle cx="6.5" cy="4.2" r=".6" fill="#60A5FA" />
+      </svg>
+      <p class="identity-text">
+        Identity saved to this device. No account needed.
+        Uninstalling removes your history.
+      </p>
+    </div>
+
+  </div>
+</div>

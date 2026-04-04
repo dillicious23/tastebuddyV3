@@ -1,0 +1,724 @@
+// src/app/components/swipe/swipe.component.scss
+
+:host {
+    display: block;
+    height: 100%;
+}
+
+.swipe-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--surface);
+    overflow: hidden;
+    position: relative;
+}
+
+// ── Top bar ───────────────────────────────────────────────────
+.swipe-top-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: max(env(safe-area-inset-top), 8px) 12px 6px;
+    flex-shrink: 0;
+}
+
+.top-right {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+}
+
+.dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.match-pill {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+// ── Hint text ─────────────────────────────────────────────────
+.hint-text {
+    text-align: center;
+    font-size: 10px;
+    color: var(--tx8);
+    padding: 0 20px 5px;
+    flex-shrink: 0;
+}
+
+// ── Card area ─────────────────────────────────────────────────
+.card-area {
+    flex: 1;
+    position: relative;
+    margin: 0 10px;
+    overflow: hidden;
+}
+
+// Card base
+.restaurant-card {
+    position: absolute;
+    inset: 0;
+    background: var(--card);
+    border-radius: 26px;
+    border: 0.5px solid rgba(255, 255, 255, 0.10);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.back-card-2 {
+    transform: translateY(20px) scale(0.89);
+    transform-origin: center top;
+    z-index: 1;
+}
+
+.back-card-1 {
+    transform: translateY(10px) scale(0.95);
+    transform-origin: center top;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.front-card {
+    z-index: 3;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transform-origin: center bottom;
+    will-change: transform;
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+// ── Card image area ───────────────────────────────────────────
+.card-image {
+    height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+
+    .card-emoji {
+        font-size: 82px;
+        line-height: 1;
+    }
+
+    .badge-cuisine,
+    .badge-dist {
+        position: absolute;
+        top: 9px;
+        background: rgba(11, 15, 26, 0.82);
+        border-radius: 20px;
+        padding: 3px 9px;
+        font-size: 10px;
+        color: var(--tx2);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .badge-cuisine {
+        right: 10px;
+    }
+
+    .badge-dist {
+        left: 10px;
+    }
+}
+
+// ── Card body ─────────────────────────────────────────────────
+.card-body {
+    padding: 10px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.card-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--tx1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rating-badge {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(245, 197, 24, 0.14);
+    border-radius: 20px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+    margin-left: 6px;
+
+    span {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--star);
+    }
+}
+
+.card-tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 9px;
+}
+
+.tag {
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 20px;
+    padding: 2px 9px;
+    font-size: 10px;
+    color: var(--tx2);
+}
+
+// ── Social bar ────────────────────────────────────────────────
+.social-bar {
+    border-radius: 12px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &.group-bar {
+        background: rgba(96, 165, 250, 0.07);
+        border: 0.5px solid rgba(96, 165, 250, 0.14);
+    }
+
+    &.solo-bar {
+        background: rgba(245, 158, 11, 0.07);
+        border: 0.5px solid rgba(245, 158, 11, 0.15);
+    }
+
+    .social-label {
+        flex: 1;
+        font-size: 10px;
+        color: var(--tx3);
+    }
+
+    .social-score {
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .solo-text {
+        flex: 1;
+        font-size: 10px;
+        color: rgba(245, 158, 11, 0.7);
+    }
+}
+
+// ── Action buttons ────────────────────────────────────────────
+.action-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px 8px;
+    flex-shrink: 0;
+}
+
+.action-btn {
+    border-radius: 50%;
+    border: 1.5px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 80ms, filter 80ms;
+
+    &:active {
+        transform: scale(0.86);
+    }
+
+    &.pass {
+        width: 58px;
+        height: 58px;
+        background: rgba(248, 113, 113, 0.08);
+        border-color: rgba(248, 113, 113, 0.28);
+
+        &:hover {
+            background: rgba(248, 113, 113, 0.20);
+        }
+    }
+
+    &.info {
+        width: 42px;
+        height: 42px;
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.08);
+        border-width: 1px;
+    }
+
+    &.like-btn {
+        width: 58px;
+        height: 58px;
+        background: rgba(74, 222, 128, 0.08);
+        border-color: rgba(74, 222, 128, 0.28);
+
+        &:hover {
+            background: rgba(74, 222, 128, 0.22);
+        }
+    }
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+.toast-container {
+    position: absolute;
+    top: 54px;
+    left: 10px;
+    right: 10px;
+    z-index: 50;
+    animation: toastDrop 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) 0.3s both;
+}
+
+.toast-card {
+    background: var(--blue-bg);
+    border: 0.5px solid rgba(96, 165, 250, 0.30);
+    border-radius: 14px;
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.toast-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.toast-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tx1);
+}
+
+.toast-sub {
+    font-size: 10px;
+    color: var(--tx5);
+}
+
+// ── Detail sheet internals ────────────────────────────────────
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.detail-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.detail-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--tx1);
+}
+
+.detail-sub {
+    font-size: 11px;
+    color: var(--tx3);
+}
+
+.detail-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.detail-pass {
+    flex: 1;
+    height: 44px;
+    background: rgba(248, 113, 113, 0.08);
+    border: 0.5px solid rgba(248, 113, 113, 0.28);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--red);
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.detail-like {
+    flex: 2;
+    height: 44px;
+    background: var(--green);
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--green-ink);
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+// ── Out of cards ──────────────────────────────────────────────
+.out-of-cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.empty-stack {
+    width: 180px;
+    height: 100px;
+    background: var(--card);
+    border: 0.5px solid rgba(255, 255, 255, 0.10);
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 22px;
+}
+
+.empty-label {
+    font-size: 10px;
+    color: var(--tx5);
+    font-weight: 600;
+}
+
+.out-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--tx1);
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.out-sub {
+    font-size: 11px;
+    color: var(--tx3);
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.options-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.option-btn {
+    width: 100%;
+    background: var(--card-alt);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px 13px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: filter 80ms;
+
+    &:active {
+        filter: brightness(0.85);
+    }
+}
+
+.opt-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.opt-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.opt-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tx1);
+}
+
+.opt-sub {
+    font-size: 10px;
+    color: var(--tx5);
+}
+
+// ── Waiting room ──────────────────────────────────────────────
+.waiting-room {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 20px 12px;
+    overflow-y: auto;
+}
+
+.wait-pulse-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+
+.wait-pulse {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(74, 222, 128, 0.30);
+    animation: waitPulse 2.4s ease-out infinite;
+
+    &.ring1 { width: 48px; height: 48px; animation-delay: 0s; }
+    &.ring2 { width: 64px; height: 64px; animation-delay: 0.5s; }
+    &.ring3 { width: 80px; height: 80px; animation-delay: 1s; }
+}
+
+@keyframes waitPulse {
+    0%   { opacity: 0.7; transform: scale(0.85); }
+    60%  { opacity: 0.15; }
+    100% { opacity: 0; transform: scale(1.05); }
+}
+
+.wait-dot {
+    width: 44px;
+    height: 44px;
+    background: rgba(74, 222, 128, 0.10);
+    border: 1px solid rgba(74, 222, 128, 0.28);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.wait-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--tx1);
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+.wait-sub {
+    font-size: 11px;
+    color: var(--tx5);
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.wait-members {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    width: 100%;
+}
+
+.wait-member-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.wait-empty-slot {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px dashed #1E293B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.3s;
+
+    &.wait-slot-joined {
+        border: none;
+    }
+}
+
+.wait-member-name {
+    font-size: 9px;
+    color: var(--tx6);
+    font-weight: 600;
+    text-align: center;
+    max-width: 54px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wait-code-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card-alt);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 10px 14px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.wait-code-chip {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wait-code-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--tx6);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.wait-code-val {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--blue);
+    letter-spacing: 3px;
+}
+
+.wait-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(96, 165, 250, 0.10);
+    border: 0.5px solid rgba(96, 165, 250, 0.25);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--blue);
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    transition: background 80ms;
+
+    &:active { background: rgba(96, 165, 250, 0.22); }
+}
+
+.wait-share-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    align-self: flex-start;
+
+    span {
+        font-size: 10px;
+        color: var(--tx6);
+    }
+}
+
+.wait-ctas {
+    display: flex;
+    gap: 7px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 8px;
+}
+
+.wait-btn-share {
+    height: 47px;
+    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 0.5px solid rgba(255, 255, 255, 0.11);
+    border-radius: 13px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--tx3);
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    transition: background 80ms;
+    &:active { background: rgba(255,255,255,0.10); }
+}
+
+.wait-btn-start {
+    flex: 1;
+    height: 47px;
+    background: var(--green);
+    border: none;
+    border-radius: 13px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--green-ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 80ms;
+    &:active { filter: brightness(0.88); }
+}
+
+.wait-btn-leave {
+    height: 47px;
+    padding: 0 14px;
+    background: rgba(248, 113, 113, 0.08);
+    border: 0.5px solid rgba(248, 113, 113, 0.22);
+    border-radius: 13px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--red);
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    transition: background 80ms;
+    &:active { background: rgba(248,113,113,0.18); }
+}

@@ -1,0 +1,85 @@
+<!-- src/app/components/groups/groups.component.html -->
+<div class="screen groups-screen">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div class="groups-header safe-top">
+    <h1 class="groups-title">Groups</h1>
+    <p class="groups-sub">
+      {{ isEmpty ? 'Your crews appear here automatically' : 'Tap any group to see history &amp; stats' }}
+    </p>
+  </div>
+
+  <!-- ── Empty state ─────────────────────────────────────────── -->
+  <div class="empty-state" *ngIf="isEmpty">
+    <span class="empty-emoji">👥</span>
+    <h2 class="empty-title">No groups yet</h2>
+    <p class="empty-body">
+      Start a session and invite friends. After you swipe together,
+      they'll automatically appear here — no setup needed.
+    </p>
+    <button class="btn-primary" style="margin-bottom:10px" (click)="startSession()">
+      Start a session →
+    </button>
+    <button class="btn-secondary" (click)="goJoin()">Join with a code</button>
+  </div>
+
+  <!-- ── Groups list ─────────────────────────────────────────── -->
+  <div class="groups-list scroll-area" *ngIf="!isEmpty">
+    <ng-container *ngFor="let g of groups">
+
+      <!-- Live group card -->
+      <div *ngIf="g.isLive" class="group-card green-card br-lg live-card" (click)="goDetail(g.id)">
+        <div class="card-top">
+          <div class="avatar-stack">
+            <div *ngFor="let m of g.members.slice(0,4)" class="avatar" [ngClass]="'av-' + m.colorIndex"
+              style="width:33px;height:33px;font-size:13px;border-color:var(--green-bg)">
+              {{ m.initial }}
+            </div>
+          </div>
+          <div class="live-badge">
+            <span class="live-dot"></span>
+            Live
+          </div>
+        </div>
+
+        <div class="card-name">{{ getShortName(g.members) }}</div>
+        <div class="card-sub">Room {{ g.liveRoomCode }} · swiping now</div>
+
+        <button class="btn-rejoin" (click)="$event.stopPropagation(); rejoin()">
+          Jump back in →
+        </button>
+      </div>
+
+      <!-- Past group card -->
+      <div *ngIf="!g.isLive" class="group-card ghost-card br-lg" (click)="goDetail(g.id)">
+        <div class="card-top">
+          <div class="avatar-stack">
+            <div *ngFor="let m of g.members.slice(0,4)" class="avatar" [ngClass]="'av-' + m.colorIndex"
+              style="width:33px;height:33px;font-size:13px;border-color:var(--card-alt)">
+              {{ m.initial }}
+            </div>
+          </div>
+          <span class="time-ago">
+            {{ g.sessions[0]?.timeAgo ?? '' }}
+          </span>
+        </div>
+
+        <div class="card-name">{{ getShortName(g.members) }}</div>
+
+        <div class="last-match" *ngIf="getLastMatch(g) as m">
+          <span class="match-emoji">{{ m.restaurant.emoji }}</span>
+          <span class="match-label">Matched · {{ m.restaurant.name }}</span>
+        </div>
+        <div class="no-match" *ngIf="!getLastMatch(g)">
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <circle cx="7" cy="7" r="5.5" stroke="#334155" stroke-width="1.1" />
+            <path d="M7 4.5V7L9 9" stroke="#334155" stroke-width="1.1" stroke-linecap="round" />
+          </svg>
+          <span>No match yet</span>
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+
+</div>

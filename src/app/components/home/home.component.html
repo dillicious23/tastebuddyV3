@@ -1,0 +1,280 @@
+<!-- src/app/components/home/home.component.html -->
+<div class="screen">
+
+  <!-- ── Full-bleed animated map ─────────────────────────────── -->
+  <div class="map-fill">
+    <svg viewBox="0 0 390 720" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gt" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B0F1A" stop-opacity=".92" />
+          <stop offset="100%" stop-color="#0B0F1A" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B0F1A" stop-opacity="0" />
+          <stop offset="100%" stop-color="#0B0F1A" stop-opacity=".98" />
+        </linearGradient>
+      </defs>
+
+      <!-- Base -->
+      <rect width="390" height="720" fill="#131A24" />
+
+      <!-- City blocks — columns 0-3 -->
+      <rect x="0" y="0" width="76" height="80" fill="#151E2A" />
+      <rect x="0" y="92" width="76" height="76" fill="#151E2A" />
+      <rect x="0" y="180" width="76" height="82" fill="#151E2A" />
+      <rect x="0" y="274" width="76" height="76" fill="#151E2A" />
+      <rect x="0" y="362" width="76" height="80" fill="#151E2A" />
+      <rect x="0" y="454" width="76" height="76" fill="#151E2A" />
+      <rect x="0" y="542" width="76" height="178" fill="#151E2A" />
+
+      <rect x="88" y="0" width="72" height="78" fill="#151E2A" />
+      <rect x="88" y="92" width="72" height="76" fill="#151E2A" />
+      <rect x="88" y="180" width="72" height="82" fill="#0E1E14" />
+      <rect x="88" y="274" width="72" height="76" fill="#151E2A" />
+      <rect x="88" y="362" width="72" height="80" fill="#0E1E14" />
+      <rect x="88" y="454" width="72" height="76" fill="#151E2A" />
+      <rect x="88" y="542" width="72" height="178" fill="#151E2A" />
+
+      <rect x="172" y="0" width="76" height="78" fill="#151E2A" />
+      <rect x="172" y="92" width="76" height="76" fill="#151E2A" />
+      <rect x="172" y="180" width="76" height="82" fill="#151E2A" />
+      <rect x="172" y="274" width="76" height="76" fill="#151E2A" />
+      <rect x="172" y="362" width="76" height="80" fill="#151E2A" />
+      <rect x="172" y="454" width="76" height="76" fill="#151E2A" />
+      <rect x="172" y="542" width="76" height="178" fill="#151E2A" />
+
+      <rect x="260" y="0" width="130" height="78" fill="#151E2A" />
+      <rect x="260" y="180" width="130" height="82" fill="#151E2A" />
+      <rect x="260" y="274" width="130" height="76" fill="#151E2A" />
+      <rect x="260" y="362" width="130" height="80" fill="#151E2A" />
+      <rect x="260" y="454" width="130" height="76" fill="#151E2A" />
+      <rect x="260" y="542" width="130" height="178" fill="#151E2A" />
+
+      <!-- Streets horizontal -->
+      <rect x="0" y="80" width="390" height="11" fill="#0D1520" />
+      <rect x="0" y="168" width="390" height="11" fill="#0D1520" />
+      <rect x="0" y="262" width="390" height="11" fill="#0D1520" />
+      <rect x="0" y="350" width="390" height="11" fill="#0D1520" />
+      <rect x="0" y="442" width="390" height="11" fill="#0D1520" />
+      <rect x="0" y="530" width="390" height="11" fill="#0D1520" />
+
+      <!-- Streets vertical -->
+      <rect x="76" y="0" width="11" height="720" fill="#0D1520" />
+      <rect x="160" y="0" width="11" height="720" fill="#0D1520" />
+      <rect x="248" y="0" width="11" height="720" fill="#0D1520" />
+
+      <!-- Water top-right -->
+      <path d="M318 0L390 0L390 140L362 160L328 100Z" fill="#0C1A28" />
+
+      <!-- Restaurant pins with bob animation -->
+      <g class="pin-bob" style="--bob-delay:0s">
+        <circle cx="44" cy="124" r="18" fill="rgba(74,222,128,.16)" />
+        <circle cx="44" cy="124" r="13" fill="#15803D" />
+        <text x="44" y="130" text-anchor="middle" font-size="14">🍜</text>
+      </g>
+      <g class="pin-bob" style="--bob-delay:.5s">
+        <circle cx="300" cy="58" r="16" fill="rgba(96,165,250,.20)" />
+        <circle cx="300" cy="58" r="11" fill="#1D4ED8" />
+        <text x="300" y="63" text-anchor="middle" font-size="12">🍔</text>
+      </g>
+      <g class="pin-bob" style="--bob-delay:1s">
+        <circle cx="126" cy="218" r="15" fill="rgba(245,158,11,.22)" />
+        <circle cx="126" cy="218" r="10" fill="#B45309" />
+        <text x="126" y="223" text-anchor="middle" font-size="11">🌮</text>
+      </g>
+      <g class="pin-bob" style="--bob-delay:1.5s">
+        <circle cx="326" cy="310" r="15" fill="rgba(244,114,182,.22)" />
+        <circle cx="326" cy="310" r="10" fill="#BE185D" />
+        <text x="326" y="315" text-anchor="middle" font-size="11">🍕</text>
+      </g>
+      <g class="pin-bob" style="--bob-delay:.9s">
+        <circle cx="210" cy="410" r="15" fill="rgba(167,139,250,.22)" />
+        <circle cx="210" cy="410" r="10" fill="#6D28D9" />
+        <text x="210" y="415" text-anchor="middle" font-size="11">🍣</text>
+      </g>
+
+      <!-- User location with pulse rings -->
+      <circle class="pulse-ring ring1" cx="195" cy="360" r="18" fill="rgba(74,222,128,.08)"
+        stroke="rgba(74,222,128,.35)" stroke-width="1.5" />
+      <circle class="pulse-ring ring2" cx="195" cy="360" r="18" fill="rgba(74,222,128,.04)"
+        stroke="rgba(74,222,128,.16)" stroke-width="1" />
+      <circle cx="195" cy="360" r="10" fill="#4ADE80" />
+      <circle cx="195" cy="360" r="5.5" fill="white" />
+
+      <!-- Gradient fades -->
+      <rect x="0" y="0" width="390" height="110" fill="url(#gt)" />
+      <rect x="0" y="440" width="390" height="280" fill="url(#gb)" />
+    </svg>
+  </div>
+
+  <!-- ── Top bar ──────────────────────────────────────────────── -->
+  <div class="top-bar safe-top">
+    <span class="logo-text">fork<span>up</span></span>
+    <div class="avatar-btn">H</div>
+  </div>
+
+  <!-- ── Compass ─────────────────────────────────────────────── -->
+  <button class="compass-btn" aria-label="Recenter map">
+    <svg width="14" height="14" viewBox="0 0 14 14">
+      <circle cx="7" cy="7" r="5.5" stroke="#475569" stroke-width="1.1" />
+      <path d="M7 2.5L8 7L7 6.3L6 7Z" fill="#4ADE80" />
+      <path d="M7 11.5L6 7L7 7.7L8 7Z" fill="#334155" />
+    </svg>
+  </button>
+
+  <!-- ── Bottom panel ─────────────────────────────────────────── -->
+  <div class="bottom-panel">
+
+    <!-- Active session banner -->
+    <ng-container *ngIf="state.hasActiveSession()">
+      <div class="green-card br-lg active-banner">
+        <div class="banner-top">
+          <span class="online-dot"></span>
+          <span class="banner-title">Session active · Room {{ state.activeRoomCode() }}</span>
+          <span class="banner-online">{{ state.activeMembers().length }} online</span>
+        </div>
+
+        <div class="banner-meta">
+          <div class="avatar-stack">
+            <div *ngFor="let m of state.activeMembers()" class="avatar" [ngClass]="'av-' + m.colorIndex"
+              style="width:22px;height:22px;font-size:9px;border-color:#091808">
+              {{ m.initial }}
+            </div>
+          </div>
+          <span class="banner-names">{{ getMemberNames(state.activeMembers()) }}</span>
+          <span *ngIf="state.matchCount() > 0" class="match-badge">
+            {{ state.matchCount() }} match 🎉
+          </span>
+        </div>
+
+        <div class="banner-actions">
+          <button class="btn-rejoin" (click)="goRejoin()">Rejoin →</button>
+          <button class="btn-share" (click)="shareCode()">Share</button>
+          <button class="btn-end" (click)="confirmEnd()">End</button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- No active session: recent groups OR empty state -->
+    <ng-container *ngIf="!state.hasActiveSession()">
+      <div class="frosted br-lg groups-strip">
+        <p class="label-caps" style="margin-bottom:8px">
+          {{ hasGroups ? 'Swipe again with' : 'Recent groups' }}
+        </p>
+
+        <!-- Groups exist -->
+        <ng-container *ngIf="hasGroups">
+          <div *ngFor="let g of recentGroups" class="group-row" (click)="openSwipeAgain(g)">
+            <div class="avatar-stack">
+              <div *ngFor="let m of g.members.slice(0,3)" class="avatar" [ngClass]="'av-' + m.colorIndex"
+                style="width:24px;height:24px;font-size:10px">
+                {{ m.initial }}
+              </div>
+            </div>
+            <div class="group-info">
+              <span class="group-name">{{ getMemberShort(g.members) }}</span>
+              <span class="group-last" *ngIf="getLastMatch(g)">Last: {{ getLastMatch(g) }}</span>
+            </div>
+            <svg width="13" height="13" viewBox="0 0 13 13">
+              <path d="M3 6.5h7M7.5 4l2.5 2.5L7.5 9" stroke="#4ADE80" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+        </ng-container>
+
+        <!-- Empty state -->
+        <ng-container *ngIf="!hasGroups">
+          <div class="empty-groups">
+            <div class="empty-avatar">
+              <svg width="13" height="13" viewBox="0 0 13 13">
+                <path d="M4 10C4 8 5.5 6.5 7.5 6.5C9.5 6.5 11 8 11 10V11H4V10Z
+                         M7.5 2C6 2 5 3 5 4.5S6 7 7.5 7C9 7 10 6 10 4.5S9 2 7.5 2Z
+                         M2 11H4" stroke="#334155" stroke-width="1.1" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div>
+              <div class="empty-title">No groups yet</div>
+              <div class="empty-sub">Groups form after your first session</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+
+    <!-- Start / Join buttons -->
+    <div class="cta-row">
+      <button class="btn-start" (click)="startSession()">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <path d="M6.5 1L12 5.2V12H8.5V8.5H4.5V12H1V5.2L6.5 1Z" fill="#052E16" />
+        </svg>
+        Start a session
+      </button>
+      <button class="btn-join" (click)="goJoin()">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <path d="M9 6.5H4M7 4L4 6.5 7 9" stroke="#60A5FA" stroke-width="1.6" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <circle cx="10.5" cy="6.5" r="2" fill="#60A5FA" />
+        </svg>
+        Join
+      </button>
+    </div>
+  </div>
+
+  <!-- ── End session dialog ───────────────────────────────────── -->
+  <div class="sheet-overlay" *ngIf="showEndDialog()" (click)="showEndDialog.set(false)">
+    <div class="sheet-body end-dialog" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="dialog-emoji">⚠️</div>
+      <h3 class="dialog-title">End this session?</h3>
+      <p class="dialog-body">
+        This ends the session for everyone in the room and saves results to your group history.
+      </p>
+      <button class="btn-primary" style="margin-bottom:8px" (click)="doEnd()">End session</button>
+      <button class="btn-secondary" (click)="showEndDialog.set(false)">Keep going</button>
+    </div>
+  </div>
+
+  <!-- ── Swipe-again sheet ────────────────────────────────────── -->
+  <div class="sheet-overlay" *ngIf="showSwipeAgainSheet()" (click)="showSwipeAgainSheet.set(false)">
+    <div class="sheet-body" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+
+      <p class="label-caps" style="margin-bottom:12px">New session with</p>
+
+      <div class="avatar-stack" style="margin-bottom:14px;justify-content:center">
+        <div *ngFor="let m of selectedGroup()?.members" class="avatar" [ngClass]="'av-' + m.colorIndex"
+          style="width:50px;height:50px;font-size:20px;border-width:2.5px">
+          {{ m.initial }}
+        </div>
+      </div>
+
+      <!-- New room code -->
+      <div class="code-block">
+        <span class="label-caps">New room code</span>
+        <div class="new-code">{{ newRoomCode() }}</div>
+        <div class="code-sub">Fresh code · different from last time</div>
+      </div>
+
+      <!-- Notification fallback -->
+      <div class="notif-block">
+        <span style="font-size:11px;font-weight:600;color:var(--blue)">How do they get the code?</span>
+        <div class="notif-row">
+          <span class="notif-num green">1</span>
+          <span>Push notification (if they allowed it)</span>
+        </div>
+        <div class="notif-row">
+          <span class="notif-num blue">2</span>
+          <span>Share the code or link yourself →</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="margin-bottom:9px" (click)="confirmSwipeAgain()">
+        Create session · share code →
+      </button>
+      <p class="sheet-note">
+        This takes you to the waiting screen so you can share before anyone starts swiping
+      </p>
+    </div>
+  </div>
+
+</div>

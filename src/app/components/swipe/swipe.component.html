@@ -1,0 +1,332 @@
+<!-- src/app/components/swipe/swipe.component.html -->
+<div class="screen swipe-screen">
+
+  <!-- ── Top bar ──────────────────────────────────────────────── -->
+  <div class="swipe-top-bar safe-top">
+    <!-- Room pill -->
+    <div class="pill">
+      Room&nbsp;
+      <strong style="color:var(--blue);letter-spacing:2.5px">{{ roomCode() }}</strong>
+    </div>
+
+    <!-- Spacer + pills -->
+    <div class="top-right">
+      <!-- Matches pill (tappable) -->
+      <button *ngIf="matchCount() > 0" class="pill pill-green match-pill" (click)="goSessionResults()">
+        <svg width="9" height="9" viewBox="0 0 9 9">
+          <path d="M4.5 1L5.4 3.5L8 3.7L6.2 5.3L6.8 8L4.5 6.6L2.2 8L2.8 5.3L1 3.7L3.6 3.5Z" fill="#4ADE80" />
+        </svg>
+        {{ matchCount() }} match
+      </button>
+
+      <!-- Share -->
+      <div class="pill">Share</div>
+
+      <!-- Online count -->
+      <div class="pill" [ngClass]="isSolo() ? 'pill-amber' : 'pill-green'">
+        <span class="dot" [style.background]="isSolo() ? 'var(--amber)' : 'var(--green)'"></span>
+        {{ isSolo() ? 'Solo' : members().length }}
+      </div>
+
+      <!-- Leave -->
+      <button class="pill pill-red" (click)="confirmLeave()">Leave</button>
+    </div>
+  </div>
+
+  <!-- Hint text (hidden while waiting) -->
+  <p class="hint-text" *ngIf="!isWaiting()">
+    {{ isSolo()
+    ? 'Building your wish list · invite friends to match'
+    : 'Swipe right if you\'d eat here · match when everyone agrees' }}
+  </p>
+
+  <!-- ── Waiting room ──────────────────────────────────────────── -->
+  <div class="waiting-room" *ngIf="isWaiting()">
+
+    <!-- Animated pulse -->
+    <div class="wait-pulse-wrap">
+      <div class="wait-pulse ring3"></div>
+      <div class="wait-pulse ring2"></div>
+      <div class="wait-pulse ring1"></div>
+      <div class="wait-dot">
+        <svg width="22" height="22" viewBox="0 0 22 22">
+          <path d="M4 14C4 11 6.7 9 11 9C15.3 9 18 11 18 14V15H4V14Z
+                   M11 3C8.8 3 7 4.8 7 7S8.8 11 11 11 15 9.2 15 7 13.2 3 11 3Z"
+                fill="#4ADE80"/>
+        </svg>
+      </div>
+    </div>
+
+    <p class="wait-title">Waiting for friends to join…</p>
+    <p class="wait-sub">Share your room code so others can join before you start</p>
+
+    <!-- Member slots -->
+    <div class="wait-members">
+      <!-- Host (you) -->
+      <div class="wait-member-slot">
+        <div class="avatar av-0" style="width:48px;height:48px;font-size:19px">
+          {{ members()[0]?.initial ?? 'H' }}
+        </div>
+        <span class="wait-member-name">You</span>
+      </div>
+      <!-- Friends waiting slots -->
+      <div class="wait-member-slot" *ngFor="let i of [1,2,3]">
+        <div class="wait-empty-slot" [class.wait-slot-joined]="members()[i]">
+          <ng-container *ngIf="members()[i]; else emptySlot">
+            <div class="avatar" [ngClass]="'av-' + members()[i].colorIndex"
+                 style="width:48px;height:48px;font-size:19px">
+              {{ members()[i].initial }}
+            </div>
+          </ng-container>
+          <ng-template #emptySlot>
+            <svg width="20" height="20" viewBox="0 0 20 20">
+              <path d="M10 5v10M5 10h10" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </ng-template>
+        </div>
+        <span class="wait-member-name">
+          {{ members()[i] ? members()[i].username : 'Waiting…' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Room code chip + copy -->
+    <div class="wait-code-row">
+      <div class="wait-code-chip">
+        <span class="wait-code-label">ROOM</span>
+        <span class="wait-code-val">{{ roomCode() }}</span>
+      </div>
+      <button class="wait-copy-btn" (click)="shareCode()">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <rect x="1" y="4" width="8" height="8" rx="1.5" stroke="#60A5FA" stroke-width="1.2"/>
+          <path d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1H10.5A1.5 1.5 0 0 1 12 2.5V7.5A1.5 1.5 0 0 1 10.5 9H9"
+                stroke="#60A5FA" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        Copy
+      </button>
+    </div>
+
+    <!-- Share code hint -->
+    <div class="wait-share-hint">
+      <svg width="11" height="11" viewBox="0 0 11 11">
+        <circle cx="5.5" cy="5.5" r="4.5" stroke="#334155" stroke-width="1"/>
+        <path d="M5.5 4v3.5" stroke="#334155" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="5.5" cy="2.8" r=".5" fill="#334155"/>
+      </svg>
+      <span>Share code to invite · they enter it on the Join screen</span>
+    </div>
+
+    <!-- CTAs -->
+    <div class="wait-ctas">
+      <button class="wait-btn-share" (click)="shareCode()">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <path d="M9 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM4 6.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z
+                   M9 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" stroke="#94A3B8" stroke-width="1.1"/>
+          <path d="M5.9 7.6L7.1 9M7.1 5.4L5.9 4.6" stroke="#94A3B8" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        Share
+      </button>
+      <button class="wait-btn-start" (click)="beginSwiping()">
+        Start Swiping
+      </button>
+      <button class="wait-btn-leave" (click)="confirmLeave()">Leave</button>
+    </div>
+
+  </div>
+
+  <!-- ── Card stack ────────────────────────────────────────────── -->
+  <div class="card-area" *ngIf="!outOfCards() && !isWaiting()">
+
+    <!-- Third card (back) -->
+    <div class="restaurant-card back-card-2">
+      <app-card-content [r]="thirdCard" [isSolo]="isSolo()" [members]="members()" [scoreColor]="scoreColor" />
+    </div>
+
+    <!-- Second card -->
+    <div class="restaurant-card back-card-1">
+      <app-card-content [r]="nextCard" [isSolo]="isSolo()" [members]="members()" [scoreColor]="scoreColor" />
+    </div>
+
+    <!-- Top card — receives gestures -->
+    <div class="restaurant-card front-card"
+      [style.transform]="'translateX(' + dragX() + 'px) translateY(' + dragY() + 'px) rotate(' + cardRotation() + 'deg)'"
+      [style.transition]="isBusy ? 'transform .34s ease, opacity .34s ease' : 'none'" (touchstart)="onDragStart($event)"
+      (touchmove)="onDragMove($event)" (touchend)="onDragEnd()" (mousedown)="onDragStart($event)"
+      (mousemove)="onDragMove($event)" (mouseup)="onDragEnd()">
+
+      <app-card-content [r]="currentCard" [isSolo]="isSolo()" [members]="members()" [scoreColor]="scoreColor" />
+
+      <!-- LIKE badge -->
+      <div class="swipe-badge like" *ngIf="swipeDir() === 'right'" [style.opacity]="badgeOpacity()">LIKE</div>
+
+      <!-- NOPE badge -->
+      <div class="swipe-badge nope" *ngIf="swipeDir() === 'left'" [style.opacity]="badgeOpacity()">NOPE</div>
+    </div>
+  </div>
+
+  <!-- ── Out of cards ──────────────────────────────────────────── -->
+  <div class="out-of-cards" *ngIf="outOfCards()">
+    <div class="empty-stack">
+      <span style="font-size:30px">🍽️</span>
+      <span class="empty-label">All done</span>
+    </div>
+    <h2 class="out-title">You've seen everything nearby</h2>
+    <p class="out-sub">{{ deck.length }} restaurants · no match yet. Choose:</p>
+
+    <div class="options-list">
+      <button class="option-btn" (click)="expandRadius()">
+        <div class="opt-icon" style="background:rgba(96,165,250,.10)">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <circle cx="8" cy="8" r="6" stroke="#60A5FA" stroke-width="1.3" />
+            <path d="M8 5v6M5 8h6" stroke="#60A5FA" stroke-width="1.3" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="opt-text">
+          <span class="opt-title">Expand to 5 miles</span>
+          <span class="opt-sub">~40 more restaurants · reload cards</span>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M4 2l4 4-4 4" stroke="#334155" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button class="option-btn" (click)="lowerBar()">
+        <div class="opt-icon" style="background:rgba(167,139,250,.10)">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M3 8h10M9 5l3 3-3 3" stroke="#A78BFA" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="opt-text">
+          <span class="opt-title">Lower the bar</span>
+          <span class="opt-sub">Match if {{ members().length - 1 }} of {{ members().length }} agree · replay all
+            cards</span>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M4 2l4 4-4 4" stroke="#334155" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button class="option-btn" (click)="startOver()">
+        <div class="opt-icon" style="background:rgba(74,222,128,.08)">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M14 8A6 6 0 1 1 8 2M8 2V0M8 2L6 4M8 2L10 4" stroke="#4ADE80" stroke-width="1.3"
+              stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="opt-text">
+          <span class="opt-title">Start over</span>
+          <span class="opt-sub">Replay the same {{ deck.length }} restaurants</span>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M4 2l4 4-4 4" stroke="#334155" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Action buttons ────────────────────────────────────────── -->
+  <div class="action-row" *ngIf="!outOfCards() && !isWaiting()">
+    <!-- Pass -->
+    <button class="action-btn pass" (click)="btnSwipe('left')">
+      <svg width="22" height="22" viewBox="0 0 22 22">
+        <line x1="7" y1="7" x2="15" y2="15" stroke="#F87171" stroke-width="2.5" stroke-linecap="round" />
+        <line x1="15" y1="7" x2="7" y2="15" stroke="#F87171" stroke-width="2.5" stroke-linecap="round" />
+      </svg>
+    </button>
+
+    <!-- Info -->
+    <button class="action-btn info" (click)="openDetail()">
+      <svg width="15" height="15" viewBox="0 0 15 15">
+        <circle cx="7.5" cy="7.5" r="6" stroke="#2D3748" stroke-width="1.2" />
+        <path d="M7.5 6.5v4" stroke="#2D3748" stroke-width="1.6" stroke-linecap="round" />
+        <circle cx="7.5" cy="4.8" r=".7" fill="#2D3748" />
+      </svg>
+    </button>
+
+    <!-- Like -->
+    <button class="action-btn like-btn" (click)="btnSwipe('right')">
+      <svg width="24" height="22" viewBox="0 0 24 22">
+        <path
+          d="M12 20L5 13C3.2 11.2 3.2 8.3 5 6.5C6.8 4.7 9.5 4.7 11.3 6.5L12 7.2L12.7 6.5C14.5 4.7 17.2 4.7 19 6.5C20.8 8.3 20.8 11.2 19 13L12 20Z"
+          fill="#4ADE80" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── Friend joined toast ───────────────────────────────────── -->
+  <div class="toast-container" *ngIf="showToast()">
+    <div class="toast-card">
+      <div class="avatar av-1" style="width:26px;height:26px;font-size:11px;border-color:var(--blue-bg)">J</div>
+      <div class="toast-body">
+        <span class="toast-title">Jamie joined</span>
+        <span class="toast-sub">Solo mode off · match fires when you both agree</span>
+      </div>
+      <div class="pill pill-green" style="font-size:9px;padding:2px 7px">● {{ members().length }} online</div>
+    </div>
+  </div>
+
+  <!-- ── Restaurant detail sheet ───────────────────────────────── -->
+  <div class="sheet-overlay" *ngIf="showDetailSheet()" (click)="closeDetail()">
+    <div class="sheet-body" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+
+      <div class="detail-header">
+        <div class="detail-icon" [style.background]="currentCard.bg">
+          {{ currentCard.emoji }}
+        </div>
+        <div class="detail-meta">
+          <h3 class="detail-name">{{ currentCard.name }}</h3>
+          <p class="detail-sub">{{ currentCard.cuisine }} · {{ currentCard.price }}</p>
+          <div class="detail-rating">
+            <svg width="10" height="10" viewBox="0 0 10 10">
+              <path d="M5 1L6.2 3.8L9 4.1L7 6L7.6 9L5 7.5L2.4 9L3 6L1 4.1L3.8 3.8Z" fill="#F5C518" />
+            </svg>
+            <span style="font-size:11px;font-weight:700;color:var(--star)">{{ currentCard.rating }}</span>
+            <span style="font-size:10px;color:var(--tx5)">· {{ currentCard.reviewCount ?? 312 }} reviews</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <circle cx="6.5" cy="6.5" r="5" stroke="#475569" stroke-width="1.1" />
+          <path d="M6.5 4v3l2 2" stroke="#475569" stroke-width="1.1" stroke-linecap="round" />
+        </svg>
+        <span style="color:var(--tx3)">{{ currentCard.hours ?? 'Mon–Sun 11am–10pm · Open now' }}</span>
+      </div>
+      <div class="info-row">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <path d="M6.5 1C4.3 1 2.5 2.8 2.5 5C2.5 7.8 6.5 12 6.5 12S10.5 7.8 10.5 5C10.5 2.8 8.7 1 6.5 1Z"
+            stroke="#60A5FA" stroke-width="1.1" />
+          <circle cx="6.5" cy="5" r="1.3" fill="#60A5FA" />
+        </svg>
+        <span style="color:var(--blue)">{{ currentCard.dist }} away · {{ currentCard.address ?? '214 Main St' }}</span>
+      </div>
+      <div class="info-row" style="margin-bottom:14px">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <path d="M2 11.5V3l4.5 3 4.5-3v8.5" stroke="#4ADE80" stroke-width="1.1" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        <span style="color:var(--green)">Walk-ins welcome · usually has tables</span>
+      </div>
+
+      <div class="detail-actions">
+        <button class="detail-pass" (click)="detailPass()">Pass</button>
+        <button class="detail-like" (click)="detailLike()">Like this place</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Leave confirmation ────────────────────────────────────── -->
+  <div class="sheet-overlay" *ngIf="showLeaveConfirm()" (click)="showLeaveConfirm.set(false)">
+    <div class="sheet-body" style="text-align:center" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Leave session?</h3>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:18px">The session continues for others in the room.</p>
+      <button class="btn-danger" style="margin-bottom:8px" (click)="doLeave()">Leave session</button>
+      <button class="btn-secondary" (click)="showLeaveConfirm.set(false)">Stay</button>
+    </div>
+  </div>
+
+</div>
