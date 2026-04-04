@@ -14,19 +14,8 @@
     <p class="join-sub">Enter the room code your friend shared</p>
 
     <!-- Hidden real input — captures system keyboard -->
-    <input
-      #codeInput
-      class="code-input-hidden"
-      type="text"
-      inputmode="text"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="characters"
-      spellcheck="false"
-      maxlength="4"
-      [value]="code()"
-      (input)="onInput($event)"
-    />
+    <input #codeInput class="code-input-hidden" type="text" inputmode="text" autocomplete="off" autocorrect="off"
+      autocapitalize="characters" spellcheck="false" maxlength="4" [value]="code()" (input)="onInput($event)" />
 
     <!-- Visual code boxes — tapping them re-focuses the input -->
     <div class="code-boxes" (click)="focusInput()">
@@ -48,22 +37,31 @@
       Tap above and type your 4-character code
     </div>
 
+    <!-- Code format hint (shown after an error) -->
+    <ng-container *ngIf="error()">
+      <div class="code-hint-divider">
+        <div></div><span>correct code looks like</span>
+        <div></div>
+      </div>
+      <div class="code-hint-boxes">
+        <div class="code-hint-box">7</div>
+        <div class="code-hint-box">X</div>
+        <div class="code-hint-box">4</div>
+        <div class="code-hint-box">K</div>
+      </div>
+    </ng-container>
+
     <!-- Loading state -->
     <div class="loading-block" *ngIf="loading()">
       <div class="spinner"></div>
       <div>
-        <div class="loading-title">Joining room…</div>
-        <div style="font-size:10px;color:var(--tx5)">{{ code() }}</div>
+        <div class="loading-title">Joining room {{ code() }}…</div>
+        <div style="font-size:10px;color:var(--tx5)">Finding the session, one sec</div>
       </div>
     </div>
 
     <!-- Join button (fallback for when auto-submit doesn't fire) -->
-    <button
-      class="btn-primary"
-      style="margin-top:auto"
-      [disabled]="code().length < 4 || loading()"
-      (click)="submit()"
-    >
+    <button class="btn-primary" style="margin-top:auto" [disabled]="code().length < 4 || loading()" (click)="submit()">
       <span *ngIf="loading()" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
       {{ loading() ? 'Joining…' : 'Join room' }}
     </button>

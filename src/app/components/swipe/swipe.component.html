@@ -20,7 +20,7 @@
       </button>
 
       <!-- Share -->
-      <div class="pill">Share</div>
+      <button class="pill" (click)="shareCode()">Share</button>
 
       <!-- Online count -->
       <div class="pill" [ngClass]="isSolo() ? 'pill-amber' : 'pill-green'">
@@ -51,8 +51,7 @@
       <div class="wait-dot">
         <svg width="22" height="22" viewBox="0 0 22 22">
           <path d="M4 14C4 11 6.7 9 11 9C15.3 9 18 11 18 14V15H4V14Z
-                   M11 3C8.8 3 7 4.8 7 7S8.8 11 11 11 15 9.2 15 7 13.2 3 11 3Z"
-                fill="#4ADE80"/>
+                   M11 3C8.8 3 7 4.8 7 7S8.8 11 11 11 15 9.2 15 7 13.2 3 11 3Z" fill="#4ADE80" />
         </svg>
       </div>
     </div>
@@ -74,13 +73,13 @@
         <div class="wait-empty-slot" [class.wait-slot-joined]="members()[i]">
           <ng-container *ngIf="members()[i]; else emptySlot">
             <div class="avatar" [ngClass]="'av-' + members()[i].colorIndex"
-                 style="width:48px;height:48px;font-size:19px">
+              style="width:48px;height:48px;font-size:19px">
               {{ members()[i].initial }}
             </div>
           </ng-container>
           <ng-template #emptySlot>
             <svg width="20" height="20" viewBox="0 0 20 20">
-              <path d="M10 5v10M5 10h10" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10 5v10M5 10h10" stroke="#334155" stroke-width="2" stroke-linecap="round" />
             </svg>
           </ng-template>
         </div>
@@ -98,9 +97,9 @@
       </div>
       <button class="wait-copy-btn" (click)="shareCode()">
         <svg width="13" height="13" viewBox="0 0 13 13">
-          <rect x="1" y="4" width="8" height="8" rx="1.5" stroke="#60A5FA" stroke-width="1.2"/>
-          <path d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1H10.5A1.5 1.5 0 0 1 12 2.5V7.5A1.5 1.5 0 0 1 10.5 9H9"
-                stroke="#60A5FA" stroke-width="1.2" stroke-linecap="round"/>
+          <rect x="1" y="4" width="8" height="8" rx="1.5" stroke="#60A5FA" stroke-width="1.2" />
+          <path d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1H10.5A1.5 1.5 0 0 1 12 2.5V7.5A1.5 1.5 0 0 1 10.5 9H9" stroke="#60A5FA"
+            stroke-width="1.2" stroke-linecap="round" />
         </svg>
         Copy
       </button>
@@ -109,9 +108,9 @@
     <!-- Share code hint -->
     <div class="wait-share-hint">
       <svg width="11" height="11" viewBox="0 0 11 11">
-        <circle cx="5.5" cy="5.5" r="4.5" stroke="#334155" stroke-width="1"/>
-        <path d="M5.5 4v3.5" stroke="#334155" stroke-width="1.2" stroke-linecap="round"/>
-        <circle cx="5.5" cy="2.8" r=".5" fill="#334155"/>
+        <circle cx="5.5" cy="5.5" r="4.5" stroke="#334155" stroke-width="1" />
+        <path d="M5.5 4v3.5" stroke="#334155" stroke-width="1.2" stroke-linecap="round" />
+        <circle cx="5.5" cy="2.8" r=".5" fill="#334155" />
       </svg>
       <span>Share code to invite · they enter it on the Join screen</span>
     </div>
@@ -121,8 +120,8 @@
       <button class="wait-btn-share" (click)="shareCode()">
         <svg width="13" height="13" viewBox="0 0 13 13">
           <path d="M9 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM4 6.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z
-                   M9 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" stroke="#94A3B8" stroke-width="1.1"/>
-          <path d="M5.9 7.6L7.1 9M7.1 5.4L5.9 4.6" stroke="#94A3B8" stroke-width="1.1" stroke-linecap="round"/>
+                   M9 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" stroke="#94A3B8" stroke-width="1.1" />
+          <path d="M5.9 7.6L7.1 9M7.1 5.4L5.9 4.6" stroke="#94A3B8" stroke-width="1.1" stroke-linecap="round" />
         </svg>
         Share
       </button>

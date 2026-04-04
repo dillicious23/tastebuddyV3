@@ -153,6 +153,29 @@
           <button class="btn-end" (click)="confirmEnd()">End</button>
         </div>
       </div>
+
+      <!-- Other groups visible alongside the active session -->
+      <ng-container *ngIf="hasGroups">
+        <div class="frosted br-lg groups-strip">
+          <p class="label-caps" style="margin-bottom:8px">Other groups</p>
+          <div *ngFor="let g of recentGroups" class="group-row" (click)="openSwipeAgain(g)">
+            <div class="avatar-stack">
+              <div *ngFor="let m of g.members.slice(0,3)" class="avatar" [ngClass]="'av-' + m.colorIndex"
+                style="width:24px;height:24px;font-size:10px">
+                {{ m.initial }}
+              </div>
+            </div>
+            <div class="group-info">
+              <span class="group-name">{{ getMemberShort(g.members) }}</span>
+              <span class="group-last" *ngIf="getLastMatch(g)">Last: {{ getLastMatch(g) }}</span>
+            </div>
+            <svg width="13" height="13" viewBox="0 0 13 13">
+              <path d="M3 6.5h7M7.5 4l2.5 2.5L7.5 9" stroke="#4ADE80" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+        </div>
+      </ng-container>
     </ng-container>
 
     <!-- No active session: recent groups OR empty state -->
