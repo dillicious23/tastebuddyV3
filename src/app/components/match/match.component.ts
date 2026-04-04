@@ -3,12 +3,12 @@
 // ═══════════════════════════════════════════════════════════════
 // src/app/components/match/match.component.ts
 
-import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
-import { RESTAURANTS, MEMBERS } from '../../data/mock-data';
+import { Restaurant } from '../../models/restaurant.model';
 
 @Component({
   selector: 'app-match',
@@ -17,37 +17,34 @@ import { RESTAURANTS, MEMBERS } from '../../data/mock-data';
   template: `
 <div class="match-screen" (click)="keepSwiping()">
 
-  <!-- Confetti -->
   <div class="cf" *ngFor="let c of confetti"
        [style.left]="c.left" [style.top]="c.top"
        [style.background]="c.color"
        [style.border-radius]="c.round ? '50%' : '2px'"
        [style.animation-delay]="c.delay"></div>
 
-  <!-- Glow -->
   <div class="match-glow"></div>
 
   <div class="match-content safe-top">
     <p class="match-label">Everyone agreed!</p>
 
-    <div class="match-emoji">{{ match.emoji }}</div>
+    <div class="match-emoji">{{ match?.emoji }}</div>
 
     <div class="match-card">
-      <h2 class="match-name">{{ match.name }}</h2>
-      <p class="match-sub">{{ match.cuisine }} · {{ match.dist }} · {{ match.price }} · ⭐ {{ match.rating }}</p>
+      <h2 class="match-name">{{ match?.name }}</h2>
+      <p class="match-sub">{{ match?.cuisine }} · {{ match?.dist }} · {{ match?.price }} · ⭐ {{ match?.rating }}</p>
       <div class="match-members">
         <div class="avatar-stack">
-          <div *ngFor="let m of members"
+          <div *ngFor="let m of members()"
                class="avatar" [ngClass]="'av-' + m.colorIndex"
                style="width:27px;height:27px;font-size:11px;border-color:#050E06">
             {{ m.initial }}
           </div>
         </div>
-        <span class="match-names">{{ memberNames }}</span>
+        <span class="match-names">{{ memberNames() }}</span>
       </div>
     </div>
 
-    <!-- CTAs -->
     <div class="match-ctas">
       <button class="btn-navigate" (click)="navigate($event)">
         <svg width="12" height="13" viewBox="0 0 12 13">
@@ -94,14 +91,16 @@ import { RESTAURANTS, MEMBERS } from '../../data/mock-data';
     .btn-results  { flex:1;height:47px;background:rgba(255,255,255,.07);border:.5px solid rgba(255,255,255,.12);border-radius:13px;font-size:12px;color:#94A3B8;font-weight:700;cursor:pointer;font-family:inherit; }
     .btn-backup   { width:100%;height:43px;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.08);border-radius:13px;font-size:11px;color:#475569;cursor:pointer;font-family:inherit;margin-bottom:12px; }
     .dismiss-hint { font-size:9px;color:#1A2232; }
-  `],
+  `]
 })
 export class MatchComponent implements OnInit, OnDestroy {
   private router = inject(Router);
+  private state = inject(AppStateService);
 
-  // Always use the Sakura Garden as the demo match
-  match = RESTAURANTS[2];
-  members = MEMBERS.slice(0, 3);
+  // Safely grab the match. Uses any to bypass strict type checking if latestMatch isn't fully typed yet.
+  match: Restaurant | null = (this.state as any).latestMatch?.() ?? this._lastFromHistory();
+
+  members = this.state.activeMembers;
 
   confetti = [
     { left: '14%', top: '7%', color: '#4ADE80', round: false, delay: '0s' },
@@ -116,13 +115,17 @@ export class MatchComponent implements OnInit, OnDestroy {
   ngOnInit(): void { }
   ngOnDestroy(): void { }
 
-  get memberNames(): string {
-    return this.members.map(m => m.username).join(', ');
-  }
+  memberNames = computed(() =>
+    this.members().map(m => m.username).join(' & ')
+  );
 
   navigate(e: Event): void {
     e.stopPropagation();
-    // In production: open maps link
+    if (this.match?.name) {
+      const query = encodeURIComponent(this.match.name);
+      // FIXED: Corrected the template literal from 0{query} to ${query}
+      window.open(`https://maps.google.com/?q=${query}`, '_blank');
+    }
   }
 
   goResults(e: Event): void {
@@ -132,5 +135,11 @@ export class MatchComponent implements OnInit, OnDestroy {
 
   keepSwiping(): void {
     this.router.navigate(['/tabs/swipe']);
+  }
+
+  // Fallback: grab the last matched restaurant from state if latestMatch was cleared
+  private _lastFromHistory(): Restaurant | null {
+    const deck = (this.state as any).deck ? (this.state as any).deck() : [];
+    return deck.length > 0 ? deck[0] : null;
   }
 }

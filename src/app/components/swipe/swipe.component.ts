@@ -68,6 +68,8 @@ export class SwipeComponent implements OnInit, OnDestroy {
     const match = this.state.latestMatch();
     const waiting = this.state.isWaiting();
     if (match && !waiting) {
+      // Consume and clear immediately so this doesn't re-fire
+      this.state.latestMatch.set(null);
       this.state.addMatch();
       this.router.navigate(['/match']);
     }

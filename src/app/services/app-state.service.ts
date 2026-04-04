@@ -83,8 +83,11 @@ export class AppStateService {
   // Live deck from DB
   readonly deck = signal<Restaurant[]>([...RESTAURANTS]);
 
-  // Match info for match screen
+  // Match info for match screen — set to a newly matched restaurant, cleared after consumption
   readonly latestMatch = signal<Restaurant | null>(null);
+
+  // Track which match IDs we've already acted on so we don't re-navigate
+  private _seenMatchIds = new Set<string>();
 
   // Room listener subscription
   private _roomSub: Subscription | null = null;
@@ -96,15 +99,22 @@ export class AppStateService {
       if (!room) return;
 
       const members = this._dbMembersToGroupMembers(room.members ?? {});
-      const matchCount = Object.values(room.matches ?? {})
-        .filter(m => m.isFull).length;
-
-      // Find the latest full match restaurant
+      const memberCount = Object.keys(room.members ?? {}).length;
       const fullMatches = Object.values(room.matches ?? {}).filter(m => m.isFull);
-      if (fullMatches.length > 0) {
-        const lastMatch = fullMatches[fullMatches.length - 1];
-        const restaurant = (room.restaurants ?? {})[lastMatch.restaurantId];
-        if (restaurant) this.latestMatch.set(restaurant);
+      const matchCount = fullMatches.length;
+
+      // Only signal a new match if:
+      // 1. the match is genuinely new (not yet seen)
+      // 2. there are 2+ members (solo right-swipes don't count as matches)
+      for (const m of fullMatches) {
+        if (!this._seenMatchIds.has(m.restaurantId) && memberCount >= 2) {
+          this._seenMatchIds.add(m.restaurantId);
+          const restaurant = (room.restaurants ?? {})[m.restaurantId];
+          if (restaurant) {
+            // Set signal — the SwipeComponent effect will navigate then clear it
+            this.latestMatch.set(restaurant);
+          }
+        }
       }
 
       // Update deck from DB
@@ -114,7 +124,7 @@ export class AppStateService {
       this._state.update(s => ({
         ...s,
         activeMembers: members,
-        isSolo: members.length <= 1,
+        isSolo: memberCount <= 1,
         matchCount,
         isWaiting: room.status === 'waiting',
         hasActiveSession: room.status !== 'ended',
@@ -125,6 +135,8 @@ export class AppStateService {
   stopListening(): void {
     this._roomSub?.unsubscribe();
     this._roomSub = null;
+    this._seenMatchIds.clear();
+    this.latestMatch.set(null);
   }
 
   // ── Create session ───────────────────────────────────────────
