@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// MATCH SCREEN
-// ═══════════════════════════════════════════════════════════════
-// src/app/components/match/match.component.ts
-
 import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -22,17 +17,15 @@ import { Restaurant } from '../../models/restaurant.model';
        [style.background]="c.color"
        [style.border-radius]="c.round ? '50%' : '2px'"
        [style.animation-delay]="c.delay"></div>
-
   <div class="match-glow"></div>
 
   <div class="match-content safe-top">
     <p class="match-label">Everyone agreed!</p>
-
-    <div class="match-emoji">{{ match?.emoji }}</div>
+    <div class="match-emoji">{{ match()?.emoji }}</div>
 
     <div class="match-card">
-      <h2 class="match-name">{{ match?.name }}</h2>
-      <p class="match-sub">{{ match?.cuisine }} · {{ match?.dist }} · {{ match?.price }} · ⭐ {{ match?.rating }}</p>
+      <h2 class="match-name">{{ match()?.name }}</h2>
+      <p class="match-sub">{{ match()?.cuisine }} · {{ match()?.dist }} · {{ match()?.price }} · ⭐ {{ match()?.rating }}</p>
       <div class="match-members">
         <div class="avatar-stack">
           <div *ngFor="let m of members()"
@@ -59,24 +52,13 @@ import { Restaurant } from '../../models/restaurant.model';
     <button class="btn-backup" (click)="keepSwiping()">
       Keep swiping for a backup →
     </button>
-
-    <p class="dismiss-hint">tap anywhere to dismiss</p>
   </div>
 </div>
   `,
   styles: [`
     :host { display:block;height:100%; }
-    .match-screen {
-      height:100%;display:flex;flex-direction:column;
-      background:linear-gradient(160deg,#071A08 0%,#050D14 50%,#0A0712 100%);
-      position:relative;overflow:hidden;cursor:pointer;
-    }
-    .match-glow {
-      position:absolute;top:22%;left:50%;transform:translate(-50%,-50%);
-      width:280px;height:280px;border-radius:50%;
-      background:radial-gradient(circle,rgba(74,222,128,.14) 0%,transparent 70%);
-      animation:glow 3s ease-in-out infinite;
-    }
+    .match-screen { height:100%;display:flex;flex-direction:column; background:linear-gradient(160deg,#071A08 0%,#050D14 50%,#0A0712 100%); position:relative;overflow:hidden;cursor:pointer; }
+    .match-glow { position:absolute;top:22%;left:50%;transform:translate(-50%,-50%); width:280px;height:280px;border-radius:50%; background:radial-gradient(circle,rgba(74,222,128,.14) 0%,transparent 70%); animation:glow 3s ease-in-out infinite; }
     .cf { position:absolute;width:7px;height:7px;animation:cfFall 3s ease-in infinite; }
     .match-content { position:relative;z-index:10;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 22px;text-align:center; }
     .match-label { font-size:10px;font-weight:700;color:#4ADE80;text-transform:uppercase;letter-spacing:.22em;margin-bottom:13px;animation:matchPop .5s ease-out both; }
@@ -90,15 +72,18 @@ import { Restaurant } from '../../models/restaurant.model';
     .btn-navigate { flex:1;height:47px;background:#4ADE80;border:none;border-radius:13px;font-size:12px;color:#052E16;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px; }
     .btn-results  { flex:1;height:47px;background:rgba(255,255,255,.07);border:.5px solid rgba(255,255,255,.12);border-radius:13px;font-size:12px;color:#94A3B8;font-weight:700;cursor:pointer;font-family:inherit; }
     .btn-backup   { width:100%;height:43px;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.08);border-radius:13px;font-size:11px;color:#475569;cursor:pointer;font-family:inherit;margin-bottom:12px; }
-    .dismiss-hint { font-size:9px;color:#1A2232; }
   `]
 })
 export class MatchComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private state = inject(AppStateService);
 
-  // Safely grab the match. Uses any to bypass strict type checking if latestMatch isn't fully typed yet.
-  match: Restaurant | null = (this.state as any).latestMatch?.() ?? this._lastFromHistory();
+  // Computes the actual live match dynamically
+  match = computed(() =>
+    this.state.latestMatch() ??
+    this.state.liveMatches()[0]?.restaurant ??
+    this.state.deck()[0]
+  );
 
   members = this.state.activeMembers;
 
@@ -115,16 +100,13 @@ export class MatchComponent implements OnInit, OnDestroy {
   ngOnInit(): void { }
   ngOnDestroy(): void { }
 
-  memberNames = computed(() =>
-    this.members().map(m => m.username).join(' & ')
-  );
+  memberNames = computed(() => this.members().map(m => m.username).join(' & '));
 
   navigate(e: Event): void {
     e.stopPropagation();
-    if (this.match?.name) {
-      const query = encodeURIComponent(this.match.name);
-      // FIXED: Corrected the template literal from 0{query} to ${query}
-      window.open(`https://maps.google.com/?q=${query}`, '_blank');
+    const m = this.match();
+    if (m?.name) {
+      window.open(`https://maps.google.com/?q=${encodeURIComponent(m.name)}`, '_blank');
     }
   }
 
@@ -135,11 +117,5 @@ export class MatchComponent implements OnInit, OnDestroy {
 
   keepSwiping(): void {
     this.router.navigate(['/tabs/swipe']);
-  }
-
-  // Fallback: grab the last matched restaurant from state if latestMatch was cleared
-  private _lastFromHistory(): Restaurant | null {
-    const deck = (this.state as any).deck ? (this.state as any).deck() : [];
-    return deck.length > 0 ? deck[0] : null;
   }
 }

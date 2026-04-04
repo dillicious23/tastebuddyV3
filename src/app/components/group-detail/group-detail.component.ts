@@ -43,9 +43,11 @@ import { generateRoomCode } from '../../data/mock-data';
       </div>
     </div>
 
-    <button class="btn-primary" style="margin:0 12px 10px" (click)="swipeAgain()">
-      Swipe again with this group
-    </button>
+    <div style="padding: 0 12px 10px;">
+      <button class="btn-primary" style="width: 100%;" (click)="swipeAgain()">
+        Swipe again with this group
+      </button>
+    </div>
 
     <!-- Session history -->
     <div class="scroll-area" style="flex:1;padding:0 12px 16px">

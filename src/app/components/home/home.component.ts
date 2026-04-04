@@ -6,11 +6,12 @@ import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { ForkupGroup, GroupMember } from '../../models/restaurant.model';
 import { generateRoomCode } from '../../data/mock-data';
+import { GoogleMapsModule, MapMarker } from '@angular/google-maps';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, GoogleMapsModule, MapMarker],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -29,6 +30,70 @@ export class HomeComponent {
 
   constructor() {
     this._animatePulse();
+  }
+
+  userLocation: google.maps.LatLngLiteral | undefined;
+
+  userMarkerIcon: any = {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="rgba(96, 165, 250, 0.25)" />
+        <circle cx="12" cy="12" r="6" fill="#FFFFFF" />
+        <circle cx="12" cy="12" r="4.5" fill="#3B82F6" />
+      </svg>
+    `),
+    scaledSize: { width: 24, height: 24 },
+    anchor: { x: 12, y: 12 }
+  };
+
+  // --- WAYMO-STYLE DARK MAP CONFIGURATION ---
+  mapOptions: google.maps.MapOptions = {
+    center: { lat: 33.4152, lng: -111.8315 },
+    zoom: 14,
+    disableDefaultUI: true, // Hides all Google UI buttons (zoom, street view)
+    clickableIcons: false,  // Prevents tapping on random map elements
+    backgroundColor: '#131A24',
+    styles: [
+      { elementType: "geometry", stylers: [{ color: "#131A24" }] },
+      { elementType: "labels.icon", stylers: [{ visibility: "off" }] }, // Turns off all icons
+      { elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
+      { elementType: "labels.text.stroke", stylers: [{ color: "#131A24" }] },
+      { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
+      { featureType: "poi", stylers: [{ visibility: "off" }] }, // Turns off businesses
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#1E293B" }] },
+      { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#0B0F1A" }] },
+      { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] }, // Turns off bus/train lines
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#0B0F1A" }] }
+    ]
+  };
+
+  ngOnInit(): void {
+    this.getUserLocation();
+  }
+
+  // NEW: Ask the phone/browser for GPS coordinates
+  getUserLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+
+          // Reassign mapOptions to trigger Angular to re-render the center
+          this.mapOptions = {
+            ...this.mapOptions,
+            center: this.userLocation
+          };
+        },
+        (error) => {
+          console.error('Location access denied or failed.', error);
+        },
+        { enableHighAccuracy: true } // Forces GPS chip for precision
+      );
+    }
   }
 
   ngOnDestroy(): void {

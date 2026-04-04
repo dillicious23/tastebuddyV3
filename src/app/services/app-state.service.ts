@@ -1,74 +1,41 @@
-// src/app/services/app-state.service.ts
-import { Injectable, signal, computed, inject, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { GroupMember, ForkupGroup, AppState, Restaurant } from '../models/restaurant.model';
+import { GroupMember, ForkupGroup, AppState, Restaurant, SessionMatch } from '../models/restaurant.model';
 import { generateRoomCode, RESTAURANTS } from '../data/mock-data';
-import { FirebaseSessionService, DbRoom, DbMember } from './firebase-session.service';
+import { FirebaseSessionService, DbMember } from './firebase-session.service';
 
-// ── Persistent device identity (survives page refresh) ──────────
+// ── Persistent device identity ──────────
 function getOrCreateUid(): string {
   let uid = localStorage.getItem('tb_uid');
-  if (!uid) {
-    uid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('tb_uid', uid);
-  }
+  if (!uid) { uid = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('tb_uid', uid); }
   return uid;
 }
+function getStoredUsername(): string { return localStorage.getItem('tb_username') ?? ''; }
 
-function getStoredUsername(): string {
-  return localStorage.getItem('tb_username') ?? '';
-}
-
-// ── Group history persistence ───────────────────────────────────
+// ── Group history persistence ──────────
 const GROUPS_KEY = 'tb_groups';
-
 function loadGroups(): ForkupGroup[] {
   try {
     const raw = localStorage.getItem(GROUPS_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as ForkupGroup[];
-    // Restore Date objects (JSON serialises them as strings)
-    return parsed.map(g => ({
-      ...g,
-      sessions: g.sessions.map(s => ({
-        ...s,
-        date: new Date(s.date),
-      })),
+    return (JSON.parse(raw) as ForkupGroup[]).map(g => ({
+      ...g, sessions: g.sessions.map(s => ({ ...s, date: new Date(s.date) }))
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
+function saveGroups(groups: ForkupGroup[]): void { localStorage.setItem(GROUPS_KEY, JSON.stringify(groups)); }
 
-function saveGroups(groups: ForkupGroup[]): void {
-  localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
-}
-
-// ── Blank starting state (no prefilled data) ────────────────────
 const BLANK_STATE: AppState = {
-  username: getStoredUsername(),
-  hasActiveSession: false,
-  isWaiting: false,
-  activeRoomCode: '',
-  activeMembers: [],
-  matchCount: 0,
-  isSolo: true,
-  searchRadius: 2,
-  groups: loadGroups(),  // ← restored from localStorage
+  username: getStoredUsername(), hasActiveSession: false, isWaiting: false, activeRoomCode: '', activeMembers: [], matchCount: 0, isSolo: true, searchRadius: 2, groups: loadGroups()
 };
 
 @Injectable({ providedIn: 'root' })
 export class AppStateService {
   private readonly fb = inject(FirebaseSessionService);
 
-  // Device identity
   readonly myUid = getOrCreateUid();
-
-  // Reactive signals
   private _state = signal<AppState>({ ...BLANK_STATE });
 
-  // Public selectors
   readonly state = this._state.asReadonly();
   readonly username = computed(() => this._state().username);
   readonly hasActiveSession = computed(() => this._state().hasActiveSession);
@@ -80,19 +47,16 @@ export class AppStateService {
   readonly groups = computed(() => this._state().groups);
   readonly searchRadius = computed(() => this._state().searchRadius);
 
-  // Live deck from DB
   readonly deck = signal<Restaurant[]>([...RESTAURANTS]);
-
-  // Match info for match screen — set to a newly matched restaurant, cleared after consumption
   readonly latestMatch = signal<Restaurant | null>(null);
 
-  // Track which match IDs we've already acted on so we don't re-navigate
-  private _seenMatchIds = new Set<string>();
+  // NEW: Live signals for the results screen
+  readonly liveMatches = signal<SessionMatch[]>([]);
+  readonly partialMatches = signal<SessionMatch[]>([]);
 
-  // Room listener subscription
+  private _seenMatchIds = new Set<string>();
   private _roomSub: Subscription | null = null;
 
-  // ── Room listener ────────────────────────────────────────────
   listenToRoom(code: string): void {
     this._roomSub?.unsubscribe();
     this._roomSub = this.fb.listenRoom$(code).subscribe(room => {
@@ -100,34 +64,36 @@ export class AppStateService {
 
       const members = this._dbMembersToGroupMembers(room.members ?? {});
       const memberCount = Object.keys(room.members ?? {}).length;
-      const fullMatches = Object.values(room.matches ?? {}).filter(m => m.isFull);
-      const matchCount = fullMatches.length;
 
-      // Only signal a new match if:
-      // 1. the match is genuinely new (not yet seen)
-      // 2. there are 2+ members (solo right-swipes don't count as matches)
+      // Map raw Firebase matches to our UI model
+      const allMatches: SessionMatch[] = Object.values(room.matches ?? {})
+        .map(m => ({
+          restaurant: (room.restaurants ?? {})[m.restaurantId],
+          agreedCount: m.agreedCount,
+          totalCount: m.totalCount,
+          isFull: m.isFull
+        }))
+        .filter(m => !!m.restaurant);
+
+      const fullMatches = allMatches.filter(m => m.isFull);
+      const partialMatches = allMatches.filter(m => !m.isFull && m.agreedCount > 0).sort((a, b) => b.agreedCount - a.agreedCount);
+
+      this.liveMatches.set(fullMatches);
+      this.partialMatches.set(partialMatches);
+
+      // Trigger the pop-up if a new match occurred
       for (const m of fullMatches) {
-        if (!this._seenMatchIds.has(m.restaurantId) && memberCount >= 2) {
-          this._seenMatchIds.add(m.restaurantId);
-          const restaurant = (room.restaurants ?? {})[m.restaurantId];
-          if (restaurant) {
-            // Set signal — the SwipeComponent effect will navigate then clear it
-            this.latestMatch.set(restaurant);
-          }
+        if (!this._seenMatchIds.has(m.restaurant.id) && memberCount >= 2) {
+          this._seenMatchIds.add(m.restaurant.id);
+          this.latestMatch.set(m.restaurant);
         }
       }
 
-      // Update deck from DB
       const dbRestaurants = Object.values(room.restaurants ?? {});
       if (dbRestaurants.length > 0) this.deck.set(dbRestaurants);
 
       this._state.update(s => ({
-        ...s,
-        activeMembers: members,
-        isSolo: memberCount <= 1,
-        matchCount,
-        isWaiting: room.status === 'waiting',
-        hasActiveSession: room.status !== 'ended',
+        ...s, activeMembers: members, isSolo: memberCount <= 1, matchCount: fullMatches.length, isWaiting: room.status === 'waiting', hasActiveSession: room.status !== 'ended'
       }));
     });
   }
@@ -137,171 +103,72 @@ export class AppStateService {
     this._roomSub = null;
     this._seenMatchIds.clear();
     this.latestMatch.set(null);
+    this.liveMatches.set([]);
+    this.partialMatches.set([]);
   }
 
-  // ── Create session ───────────────────────────────────────────
   async startSession(): Promise<string> {
     const code = generateRoomCode();
     await this.fb.createRoom(code, this.myUid, this._state().username);
-
-    this._state.update(s => ({
-      ...s,
-      hasActiveSession: true,
-      isWaiting: true,
-      activeRoomCode: code,
-      matchCount: 0,
-      activeMembers: [{
-        initial: s.username[0]?.toUpperCase() ?? 'U',
-        colorIndex: 0,
-        username: s.username,
-      }],
-      isSolo: true,
-    }));
-
+    this._state.update(s => ({ ...s, hasActiveSession: true, isWaiting: true, activeRoomCode: code, matchCount: 0, activeMembers: [{ initial: s.username[0]?.toUpperCase() ?? 'U', colorIndex: 0, username: s.username }], isSolo: true }));
     this.listenToRoom(code);
     return code;
   }
 
-  // ── Join session ─────────────────────────────────────────────
   async joinSession(code: string): Promise<boolean> {
     const room = await this.fb.joinRoom(code, this.myUid, this._state().username);
     if (!room) return false;
-
     const members = this._dbMembersToGroupMembers(room.members);
-    this._state.update(s => ({
-      ...s,
-      hasActiveSession: true,
-      isWaiting: room.status === 'waiting',
-      activeRoomCode: code,
-      matchCount: 0,
-      activeMembers: members,
-      isSolo: members.length <= 1,
-    }));
-
+    this._state.update(s => ({ ...s, hasActiveSession: true, isWaiting: room.status === 'waiting', activeRoomCode: code, matchCount: 0, activeMembers: members, isSolo: members.length <= 1 }));
     this.listenToRoom(code);
     return true;
   }
 
-  // ── Start swiping ────────────────────────────────────────────
   async startSwiping(): Promise<void> {
     const code = this._state().activeRoomCode;
     if (code) await this.fb.setStatus(code, 'swiping');
     this._state.update(s => ({ ...s, isWaiting: false }));
   }
 
-  // ── Record swipe ─────────────────────────────────────────────
   async recordSwipe(restaurantId: string, dir: 'yes' | 'no'): Promise<void> {
     const code = this._state().activeRoomCode;
     if (!code) return;
     await this.fb.recordSwipe(code, this.myUid, restaurantId, dir);
   }
 
-  // ── End session ──────────────────────────────────────────────
   async endSession(): Promise<void> {
     const s = this._state();
     const code = s.activeRoomCode;
 
-    // Snapshot the room from Firebase before clearing so we can save matches
-    let room = null;
-    if (code) {
-      try { room = await this.fb.getRoom(code); } catch { /* ignore */ }
-      await this.fb.endRoom(code);
-    }
-    this.stopListening();
+    if (code) { await this.fb.endRoom(code); }
 
-    // Build a PastSession from the live Firebase data
+    // Save to history using actual liveMatches array!
     if (code && s.activeMembers.length > 0) {
-      const fullMatches = Object.values(room?.matches ?? {})
-        .filter(m => m.isFull)
-        .map(m => ({
-          restaurant: (room?.restaurants ?? {})[m.restaurantId],
-          agreedCount: m.agreedCount,
-          totalCount: m.totalCount,
-          isFull: true,
-        }))
-        .filter(m => !!m.restaurant);
-
-      const pastSession = {
-        date: new Date(),
-        roomCode: code,
-        matches: fullMatches,
-        timeAgo: 'just now',
-      };
-
-      // Find or create a group matching these members
+      const pastSession = { date: new Date(), roomCode: code, matches: this.liveMatches(), timeAgo: 'just now' };
       const usernameKey = s.activeMembers.map(m => m.username).sort().join(',');
       const currentGroups = this._state().groups;
-      const existingIdx = currentGroups.findIndex(g =>
-        g.members.map(m => m.username).sort().join(',') === usernameKey
-      );
+      const existingIdx = currentGroups.findIndex(g => g.members.map(m => m.username).sort().join(',') === usernameKey);
 
       let updatedGroups: ForkupGroup[];
       if (existingIdx >= 0) {
-        // Prepend the new session to the existing group
-        updatedGroups = currentGroups.map((g, i) =>
-          i === existingIdx
-            ? { ...g, isLive: false, sessions: [pastSession, ...g.sessions] }
-            : g
-        );
+        updatedGroups = currentGroups.map((g, i) => i === existingIdx ? { ...g, isLive: false, sessions: [pastSession, ...g.sessions] } : g);
       } else {
-        // Create a new group entry
-        const newGroup: ForkupGroup = {
-          id: code,
-          members: s.activeMembers,
-          isLive: false,
-          sessions: [pastSession],
-        };
-        updatedGroups = [newGroup, ...currentGroups];
+        updatedGroups = [{ id: code, members: s.activeMembers, isLive: false, sessions: [pastSession] }, ...currentGroups];
       }
-
       saveGroups(updatedGroups);
       this._state.update(st => ({ ...st, groups: updatedGroups }));
     }
 
-    // Clear active session state
-    this._state.update(st => ({
-      ...st,
-      hasActiveSession: false,
-      isWaiting: false,
-      activeRoomCode: '',
-      matchCount: 0,
-      activeMembers: [],
-      isSolo: true,
-    }));
+    this.stopListening();
+    this._state.update(st => ({ ...st, hasActiveSession: false, isWaiting: false, activeRoomCode: '', matchCount: 0, activeMembers: [], isSolo: true }));
   }
 
-  // ── Username ─────────────────────────────────────────────────
-  setUsername(name: string): void {
-    localStorage.setItem('tb_username', name);
-    this._state.update(s => ({ ...s, username: name }));
-  }
+  setUsername(name: string): void { localStorage.setItem('tb_username', name); this._state.update(s => ({ ...s, username: name })); }
+  setSearchRadius(radius: number): void { this._state.update(s => ({ ...s, searchRadius: radius })); }
+  addMatch(): void { this._state.update(s => ({ ...s, matchCount: s.matchCount + 1 })); }
+  friendJoined(member: GroupMember): void { this._state.update(s => ({ ...s, isSolo: false, activeMembers: [...s.activeMembers, member] })); }
 
-  // ── Search radius ────────────────────────────────────────────
-  setSearchRadius(radius: number): void {
-    this._state.update(s => ({ ...s, searchRadius: radius }));
-  }
-
-  // ── Legacy helpers (still used by some components) ──────────
-  addMatch(): void {
-    this._state.update(s => ({ ...s, matchCount: s.matchCount + 1 }));
-  }
-
-  friendJoined(member: GroupMember): void {
-    this._state.update(s => ({
-      ...s,
-      isSolo: false,
-      activeMembers: [...s.activeMembers, member],
-    }));
-  }
-
-  // ── Private helpers ──────────────────────────────────────────
   private _dbMembersToGroupMembers(dbMembers: { [uid: string]: DbMember }): GroupMember[] {
-    return Object.values(dbMembers ?? {})
-      .sort((a, b) => a.joinedAt - b.joinedAt)
-      .map(m => ({
-        initial: m.initial,
-        colorIndex: m.colorIndex,
-        username: m.username,
-      }));
+    return Object.values(dbMembers ?? {}).sort((a, b) => a.joinedAt - b.joinedAt).map(m => ({ initial: m.initial, colorIndex: m.colorIndex, username: m.username }));
   }
 }
