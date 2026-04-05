@@ -22,6 +22,13 @@ export interface Restaurant {
   hours?: string;
   address?: string;
   reviewCount?: number;
+  imageUrl?: string;
+  lat?: number;
+  lng?: number;
+  color?: string;
+  yelpUrl?: string;
+  isOpenNow?: boolean;
+  takesReservations?: boolean;
 }
 
 export interface GroupMember {
@@ -64,4 +71,5 @@ export interface AppState {
   isSolo: boolean;
   searchRadius: number;
   groups: ForkupGroup[];
+
 }

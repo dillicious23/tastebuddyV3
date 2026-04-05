@@ -90,10 +90,26 @@ export class AppStateService {
       }
 
       const dbRestaurants = Object.values(room.restaurants ?? {});
-      if (dbRestaurants.length > 0) this.deck.set(dbRestaurants);
+
+      if (dbRestaurants.length > 0) {
+        // 💥 THE FIX: Object.values() shuffles randomly on every snapshot!
+        // We check if we already have these specific restaurants in our deck.
+        // If we do, we completely ignore the incoming array to keep the card order perfectly stable.
+        const firstIncomingId = dbRestaurants[0].id;
+        const alreadyLoaded = this.deck().some(r => r.id === firstIncomingId);
+
+        if (!alreadyLoaded) {
+          this.deck.set(dbRestaurants);
+        }
+      }
 
       this._state.update(s => ({
-        ...s, activeMembers: members, isSolo: memberCount <= 1, matchCount: fullMatches.length, isWaiting: room.status === 'waiting', hasActiveSession: room.status !== 'ended'
+        ...s,
+        activeMembers: members,
+        isSolo: memberCount <= 1,
+        matchCount: fullMatches.length,
+        isWaiting: room.status === 'waiting',
+        hasActiveSession: room.status !== 'ended'
       }));
     });
   }
@@ -107,10 +123,21 @@ export class AppStateService {
     this.partialMatches.set([]);
   }
 
-  async startSession(): Promise<string> {
+  async startSession(lat: number = 33.4152, lng: number = -111.8315): Promise<string> {
     const code = generateRoomCode();
-    await this.fb.createRoom(code, this.myUid, this._state().username);
-    this._state.update(s => ({ ...s, hasActiveSession: true, isWaiting: true, activeRoomCode: code, matchCount: 0, activeMembers: [{ initial: s.username[0]?.toUpperCase() ?? 'U', colorIndex: 0, username: s.username }], isSolo: true }));
+
+    await this.fb.createRoom(code, this.myUid, this._state().username, lat, lng, this._state().searchRadius);
+
+    this._state.update(s => ({
+      ...s,
+      hasActiveSession: true,
+      isWaiting: true,
+      activeRoomCode: code,
+      matchCount: 0,
+      activeMembers: [{ initial: s.username[0]?.toUpperCase() ?? 'U', colorIndex: 0, username: s.username }],
+      isSolo: true
+    }));
+
     this.listenToRoom(code);
     return code;
   }

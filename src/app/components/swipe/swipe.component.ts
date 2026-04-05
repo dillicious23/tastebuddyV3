@@ -35,6 +35,7 @@ export class SwipeComponent implements OnInit, OnDestroy {
   startX = 0;
   startY = 0;
   isBusy = false;
+  localLikes = 0;
 
   // Derived direction indicator (for LIKE/NOPE badge)
   swipeDir = computed<SwipeDir>(() => {
@@ -50,6 +51,14 @@ export class SwipeComponent implements OnInit, OnDestroy {
   // Animated badge opacity
   badgeOpacity = computed(() => Math.min(Math.abs(this.dragX()) / 80, 1));
 
+  swipeProgress = computed(() => Math.min(Math.abs(this.dragX()) / (window.innerWidth / 2), 1));
+
+  backCard1Scale = computed(() => 0.95 + (this.swipeProgress() * 0.05));
+  backCard1Y = computed(() => 10 - (this.swipeProgress() * 10));
+
+  backCard2Scale = computed(() => 0.89 + (this.swipeProgress() * 0.06));
+  backCard2Y = computed(() => 20 - (this.swipeProgress() * 10));
+
   // UI state signals
   showDetailSheet = signal(false);
   showToast = signal(false);
@@ -62,6 +71,7 @@ export class SwipeComponent implements OnInit, OnDestroy {
   isSolo = this.state.isSolo;
   members = this.state.activeMembers;
   isWaiting = this.state.isWaiting;
+  copied = signal(false);
 
   // Navigate to /match when Firebase detects a full consensus
   private _matchWatcher = effect(() => {
@@ -138,15 +148,19 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
     const swipedRestaurant = this.currentCard;
 
+    // 💥 NEW: Instantly track likes locally
+    if (dir === 'right') this.localLikes++;
+
     // Record to Firebase
     this.state.recordSwipe(swipedRestaurant.id, dir === 'right' ? 'yes' : 'no');
 
-    // Snap card off screen
     const targetX = dir === 'right' ? window.innerWidth * 1.4 : -window.innerWidth * 1.4;
     this.dragX.set(targetX);
     this.dragY.set(20);
 
     setTimeout(() => {
+      this.isBusy = false;
+
       const next = (this.topIdx() + 1) % this.deck.length;
 
       this.topIdx.set(next);
@@ -156,10 +170,14 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
       // Out of cards after one full loop
       if (next === 0) {
-        this.outOfCards.set(true);
-      }
 
-      setTimeout(() => { this.isBusy = false; }, 50);
+        // 💥 FIXED: Check localLikes for instantaneous response
+        if (this.isSolo() && this.localLikes > 0) {
+          this.goSessionResults();
+        } else {
+          this.outOfCards.set(true);
+        }
+      }
     }, 340);
   }
 
@@ -179,10 +197,33 @@ export class SwipeComponent implements OnInit, OnDestroy {
     await this.state.startSwiping();
   }
 
-  shareCode(): void {
+  async shareCode(): Promise<void> {
     const code = this.state.activeRoomCode();
-    if (navigator.clipboard) navigator.clipboard.writeText(code);
-    // In production: navigator.share({ text: code })
+    const shareText = `Join my Tastebuddy room! Code: ${code}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Tastebuddy Room',
+          text: shareText,
+        });
+      } catch (err) {
+        console.log('Share dismissed or failed');
+      }
+    } else {
+      // Fallback if they are on a desktop browser that doesn't support sharing
+      this.copyCode();
+    }
+  }
+
+  // 💥 NEW: Dedicated copy method with visual feedback
+  async copyCode(): Promise<void> {
+    const code = this.state.activeRoomCode();
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(code);
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000); // Reset after 2 seconds
+    }
   }
 
   // ── Leave ─────────────────────────────────────────────────
@@ -195,19 +236,21 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
   // ── Out-of-cards options ──────────────────────────────────
   expandRadius(): void {
-    // In production: update search radius and reload deck
     this.outOfCards.set(false);
     this.topIdx.set(0);
+    this.localLikes = 0; // Reset
   }
 
   lowerBar(): void {
     this.outOfCards.set(false);
     this.topIdx.set(0);
+    this.localLikes = 0; // Reset
   }
 
   startOver(): void {
     this.outOfCards.set(false);
     this.topIdx.set(0);
+    this.localLikes = 0; // Reset
   }
 
   // ── Score colour ──────────────────────────────────────────

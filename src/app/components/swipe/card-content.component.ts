@@ -10,10 +10,15 @@ import { Restaurant, GroupMember } from '../../models/restaurant.model';
     template: `
     <!-- Image area -->
     <div class="card-image" [style.background]="r.bg">
-      <span class="card-emoji">{{ r.emoji }}</span>
+      
+      <img *ngIf="r.imageUrl" [src]="r.imageUrl" 
+           style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
+      
+      <span *ngIf="!r.imageUrl" class="card-emoji">{{ r.emoji }}</span>
+      
       <div class="badge-cuisine">{{ r.cuisine }}</div>
       <div class="badge-dist">
-        <svg width="6" height="8" viewBox="0 0 6 8">
+        <svg width="8" height="10" viewBox="0 0 6 8">
           <path d="M3 0C1.4 0 0 1.4 0 3C0 5.4 3 8 3 8S6 5.4 6 3C6 1.4 4.6 0 3 0Z" fill="#60A5FA"/>
           <circle cx="3" cy="3" r="1.1" fill="#0B0F1A"/>
         </svg>
@@ -37,7 +42,18 @@ import { Restaurant, GroupMember } from '../../models/restaurant.model';
         <span class="tag">{{ r.price }}</span>
         <span class="tag">{{ r.cuisine }}</span>
         <span class="tag">{{ r.dist }}</span>
-      </div>
+        
+        <a *ngIf="r.yelpUrl" [href]="r.yelpUrl" target="_blank" rel="noopener noreferrer"
+           (touchstart)="$event.stopPropagation()" 
+           (mousedown)="$event.stopPropagation()" 
+           (click)="$event.stopPropagation()"
+           class="tag yelp-tag">
+          <img src="assets/icon/yelp_burst.svg" 
+               style="width: 14px; height: 14px; margin-right: 5px; object-fit: contain;" 
+               alt="Yelp Logo">
+          <span style="font-weight: 700;">Yelp</span>
+        </a>
+      </div> 
 
       <!-- Social bar -->
       <div class="social-bar" [ngClass]="isSolo ? 'solo-bar' : 'group-bar'">
@@ -61,7 +77,7 @@ import { Restaurant, GroupMember } from '../../models/restaurant.model';
             <path d="M7 6v3.5" stroke="#F59E0B" stroke-width="1.4" stroke-linecap="round"/>
             <circle cx="7" cy="4.2" r=".7" fill="#F59E0B"/>
           </svg>
-          <span class="solo-text">You liked this. Invite someone to see if they agree.</span>
+          <span class="solo-text">Swipe right to add this to your wish list.</span>
         </ng-container>
       </div>
     </div>

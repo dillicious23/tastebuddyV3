@@ -95,13 +95,21 @@
         <span class="wait-code-label">ROOM</span>
         <span class="wait-code-val">{{ roomCode() }}</span>
       </div>
-      <button class="wait-copy-btn" (click)="shareCode()">
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <rect x="1" y="4" width="8" height="8" rx="1.5" stroke="#60A5FA" stroke-width="1.2" />
-          <path d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1H10.5A1.5 1.5 0 0 1 12 2.5V7.5A1.5 1.5 0 0 1 10.5 9H9" stroke="#60A5FA"
-            stroke-width="1.2" stroke-linecap="round" />
+      <button class="wait-copy-btn" (click)="copyCode()" [style.borderColor]="copied() ? 'rgba(74, 222, 128, 0.4)' : ''"
+        [style.background]="copied() ? 'rgba(74, 222, 128, 0.15)' : ''">
+
+        <svg *ngIf="!copied()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
-        Copy
+
+        <svg *ngIf="copied()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="3"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+
+        <span [style.color]="copied() ? '#4ADE80' : ''">{{ copied() ? 'Copied!' : 'Copy' }}</span>
       </button>
     </div>
 
@@ -118,10 +126,13 @@
     <!-- CTAs -->
     <div class="wait-ctas">
       <button class="wait-btn-share" (click)="shareCode()">
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <path d="M9 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM4 6.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z
-                   M9 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" stroke="#94A3B8" stroke-width="1.1" />
-          <path d="M5.9 7.6L7.1 9M7.1 5.4L5.9 4.6" stroke="#94A3B8" stroke-width="1.1" stroke-linecap="round" />
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
         </svg>
         Share
       </button>
@@ -137,12 +148,15 @@
   <div class="card-area" *ngIf="!outOfCards() && !isWaiting()">
 
     <!-- Third card (back) -->
-    <div class="restaurant-card back-card-2">
+    <div class="restaurant-card back-card-2"
+      [style.transform]="'translateY(' + backCard2Y() + 'px) scale(' + backCard2Scale() + ')'"
+      [style.transition]="isBusy ? 'transform .34s ease' : 'none'">
       <app-card-content [r]="thirdCard" [isSolo]="isSolo()" [members]="members()" [scoreColor]="scoreColor" />
     </div>
 
-    <!-- Second card -->
-    <div class="restaurant-card back-card-1">
+    <div class="restaurant-card back-card-1"
+      [style.transform]="'translateY(' + backCard1Y() + 'px) scale(' + backCard1Scale() + ')'"
+      [style.transition]="isBusy ? 'transform .34s ease' : 'none'">
       <app-card-content [r]="nextCard" [isSolo]="isSolo()" [members]="members()" [scoreColor]="scoreColor" />
     </div>
 
@@ -170,7 +184,11 @@
       <span class="empty-label">All done</span>
     </div>
     <h2 class="out-title">You've seen everything nearby</h2>
-    <p class="out-sub">{{ deck.length }} restaurants · no match yet. Choose:</p>
+
+    <p class="out-sub">
+      {{ deck.length }} restaurants ·
+      {{ isSolo() ? 'nothing added to wish list' : 'no match yet' }}. Choose:
+    </p>
 
     <div class="options-list">
       <button class="option-btn" (click)="expandRadius()">
@@ -189,7 +207,7 @@
         </svg>
       </button>
 
-      <button class="option-btn" (click)="lowerBar()">
+      <button *ngIf="!isSolo()" class="option-btn" (click)="lowerBar()">
         <div class="opt-icon" style="background:rgba(167,139,250,.10)">
           <svg width="16" height="16" viewBox="0 0 16 16">
             <path d="M3 8h10M9 5l3 3-3 3" stroke="#A78BFA" stroke-width="1.3" stroke-linecap="round"
@@ -271,8 +289,12 @@
       <div class="sheet-handle"></div>
 
       <div class="detail-header">
-        <div class="detail-icon" [style.background]="currentCard.bg">
-          {{ currentCard.emoji }}
+        <div class="detail-icon" [style.background]="currentCard.bg" style="position:relative; overflow:hidden;">
+
+          <img *ngIf="currentCard.imageUrl" [src]="currentCard.imageUrl"
+            style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;" />
+
+          <span *ngIf="!currentCard.imageUrl" style="position:relative; z-index:2">{{ currentCard.emoji }}</span>
         </div>
         <div class="detail-meta">
           <h3 class="detail-name">{{ currentCard.name }}</h3>
@@ -288,26 +310,48 @@
       </div>
 
       <div class="info-row">
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <circle cx="6.5" cy="6.5" r="5" stroke="#475569" stroke-width="1.1" />
-          <path d="M6.5 4v3l2 2" stroke="#475569" stroke-width="1.1" stroke-linecap="round" />
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
         </svg>
-        <span style="color:var(--tx3)">{{ currentCard.hours ?? 'Mon–Sun 11am–10pm · Open now' }}</span>
+        <span [style.color]="currentCard.isOpenNow ? '#4ADE80' : '#F87171'" style="font-weight: 700;">
+          {{ currentCard.isOpenNow ? 'Open right now' : 'Currently closed' }}
+        </span>
       </div>
+
       <div class="info-row">
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <path d="M6.5 1C4.3 1 2.5 2.8 2.5 5C2.5 7.8 6.5 12 6.5 12S10.5 7.8 10.5 5C10.5 2.8 8.7 1 6.5 1Z"
-            stroke="#60A5FA" stroke-width="1.1" />
-          <circle cx="6.5" cy="5" r="1.3" fill="#60A5FA" />
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        <span style="color:var(--blue)">{{ currentCard.dist }} away · {{ currentCard.address ?? '214 Main St' }}</span>
+        <span style="color:var(--blue)">{{ currentCard.dist }} away</span>
       </div>
-      <div class="info-row" style="margin-bottom:14px">
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <path d="M2 11.5V3l4.5 3 4.5-3v8.5" stroke="#4ADE80" stroke-width="1.1" stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
-        <span style="color:var(--green)">Walk-ins welcome · usually has tables</span>
+
+      <div class="info-row" style="margin-top: 6px;">
+        <div class="pill" [ngClass]="currentCard.takesReservations ? 'pill-blue' : 'pill-green'">
+          <svg *ngIf="!currentCard.takesReservations" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:4px;">
+            <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path>
+            <path d="M15 18H9"></path>
+            <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path>
+            <circle cx="17" cy="18" r="2"></circle>
+            <circle cx="7" cy="18" r="2"></circle>
+          </svg>
+
+          <svg *ngIf="currentCard.takesReservations" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:4px;">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+
+          {{ currentCard.takesReservations ? 'Reservations available' : 'Walk-ins welcome' }}
+        </div>
       </div>
 
       <div class="detail-actions">

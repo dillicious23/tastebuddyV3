@@ -1,7 +1,7 @@
 // src/app/services/firebase-session.service.ts
 // All Firestore reads/writes for TasteBuddy sessions.
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   collection, doc, setDoc, updateDoc, getDoc, getDocs,
   onSnapshot, Unsubscribe, serverTimestamp, Timestamp,
@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 import { db } from '../core/firebase';
 import { GroupMember, Restaurant } from '../models/restaurant.model';
 import { RESTAURANTS } from '../data/mock-data';
+import { YelpService } from './yelp.service';
 
 // ── Firestore document shapes ────────────────────────────────────
 export interface DbMember {
@@ -33,6 +34,7 @@ export interface DbRoom {
   members: { [uid: string]: DbMember };
   matches: { [restaurantId: string]: DbMatch };
   restaurants: { [id: string]: Restaurant };
+  swipes?: { [uid: string]: { [rId: string]: string } }; // 💥 NEW
 }
 
 // ── Color slot cycling ───────────────────────────────────────────
@@ -40,9 +42,10 @@ const COLOR_CYCLE: (0 | 1 | 2 | 3)[] = [0, 1, 2, 3];
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseSessionService {
+  private yelp = inject(YelpService);
 
   // ── Create a new room ────────────────────────────────────────
-  async createRoom(code: string, uid: string, username: string): Promise<void> {
+  async createRoom(code: string, uid: string, username: string, lat: number, lng: number, radius: number): Promise<void> {
     const member: DbMember = {
       username,
       initial: username[0]?.toUpperCase() ?? 'U',
@@ -50,8 +53,10 @@ export class FirebaseSessionService {
       joinedAt: Date.now(),
     };
 
+    const liveRestaurants = await this.yelp.getRestaurants(lat, lng, radius);
+
     const restaurantMap: { [id: string]: Restaurant } = {};
-    RESTAURANTS.forEach(r => { restaurantMap[r.id] = r; });
+    liveRestaurants.forEach(r => { restaurantMap[r.id] = r; });
 
     const roomRef = doc(db, 'rooms', code);
     await setDoc(roomRef, {
@@ -104,10 +109,15 @@ export class FirebaseSessionService {
     restaurantId: string,
     dir: 'yes' | 'no',
   ): Promise<void> {
-    // Write swipe into swipes sub-map on the room doc
-    await updateDoc(doc(db, 'rooms', code), {
-      [`swipes.${uid}.${restaurantId}`]: dir,
-    });
+
+    // 💥 FIXED: Using setDoc with merge deeply creates missing maps automatically!
+    await setDoc(doc(db, 'rooms', code), {
+      swipes: {
+        [uid]: {
+          [restaurantId]: dir
+        }
+      }
+    }, { merge: true });
 
     if (dir === 'yes') {
       await this._checkAndWriteMatch(code, restaurantId);
@@ -119,9 +129,9 @@ export class FirebaseSessionService {
     const snap = await getDoc(doc(db, 'rooms', code));
     if (!snap.exists()) return;
 
-    const room = snap.data() as DbRoom & { swipes?: { [uid: string]: { [rId: string]: string } } };
+    const room = snap.data() as DbRoom;
     const members = room.members ?? {};
-    const swipes = (room as any).swipes ?? {};
+    const swipes = room.swipes ?? {};
 
     const totalCount = Object.keys(members).length;
     const agreedCount = Object.values(swipes)
@@ -129,14 +139,17 @@ export class FirebaseSessionService {
 
     const isFull = agreedCount === totalCount && totalCount > 0;
 
-    await updateDoc(doc(db, 'rooms', code), {
-      [`matches.${restaurantId}`]: {
-        restaurantId,
-        agreedCount,
-        totalCount,
-        isFull,
-      },
-    });
+    // 💥 FIXED: Safe merging for matches too!
+    await setDoc(doc(db, 'rooms', code), {
+      matches: {
+        [restaurantId]: {
+          restaurantId,
+          agreedCount,
+          totalCount,
+          isFull,
+        }
+      }
+    }, { merge: true });
   }
 
   // ── Live room listener (Firestore onSnapshot) ────────────────

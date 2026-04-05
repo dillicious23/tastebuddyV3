@@ -5,8 +5,12 @@
   <div class="map-bg">
     <google-map height="100%" width="100%" [options]="mapOptions">
 
-      <map-marker *ngIf="userLocation" [position]="userLocation" [icon]="userMarkerIcon">
+      <map-marker *ngIf="userLocation" [position]="userLocation" [icon]="userMarkerIcon"></map-marker>
+
+      <map-marker *ngFor="let r of nearbyRestaurants; let i = index" [position]="{ lat: r.lat, lng: r.lng }"
+        [icon]="getRestaurantMarker(r, i)" [title]="r.name" [options]="dropMarkerOptions">
       </map-marker>
+
 
     </google-map>
   </div>

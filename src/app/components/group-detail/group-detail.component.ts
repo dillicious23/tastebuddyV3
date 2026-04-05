@@ -19,13 +19,14 @@ import { generateRoomCode } from '../../data/mock-data';
 <div class="screen" style="background:var(--surface)">
 
   <!-- Back -->
-  <div class="back-row safe-top" (click)="goBack()">
-    <svg width="14" height="14" viewBox="0 0 14 14">
-      <path d="M9 3L5 7l4 4" stroke="#475569" stroke-width="1.6"
-            stroke-linecap="round" stroke-linejoin="round"/>
+  <div class="back-row safe-top">
+  <div class="back-pill" (click)="goBack()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 18l-6-6 6-6"/>
     </svg>
-    <span style="font-size:11px;color:var(--tx4)">Groups</span>
+    <span>Groups</span>
   </div>
+</div>
 
   <ng-container *ngIf="group">
     <!-- Header -->
@@ -90,7 +91,50 @@ import { generateRoomCode } from '../../data/mock-data';
 </div>
   `,
   styles: [`
-    .back-row { display:flex;align-items:center;gap:5px;padding:max(env(safe-area-inset-top),12px) 16px 0;cursor:pointer; }
+    // ── Top Bar Pill ──────────────────────────────────────────────
+.back-row {
+    padding: max(env(safe-area-inset-top), 14px) 16px 6px;
+    display: flex;
+    align-items: center;
+}
+
+.back-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    
+    // Glassmorphism effect
+    background: rgba(11, 15, 26, 0.70);
+    backdrop-filter: blur(14px);
+    
+    // Border and Shape
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    
+    // Typography & Color
+    color: #E2E8F0;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s, opacity 0.2s;
+
+    span {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -0.2px;
+    }
+
+    svg {
+        display: block;
+        color: var(--tx5);
+    }
+
+    &:active {
+        opacity: 0.7;
+        background: rgba(11, 15, 26, 0.90);
+    }
+}
     .gh-header { display:flex;align-items:center;gap:10px;padding:8px 16px 10px; }
     .gh-meta   { display:flex;flex-direction:column;gap:1px; }
     .gh-name   { font-size:15px;font-weight:800;color:var(--tx1); }

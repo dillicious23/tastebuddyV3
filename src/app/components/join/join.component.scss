@@ -20,16 +20,43 @@
     }
 }
 
+// ── Top Bar / Back Pill ────────────────────────────────────────
 .back-row {
+    padding: max(env(safe-area-inset-top), 14px) 16px 6px;
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: max(env(safe-area-inset-top), 12px) 16px 0;
+}
+
+.back-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: rgba(11, 15, 26, 0.70); // Premium dark translucent
+    backdrop-filter: blur(14px); // The "Glass" effect
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    color: #E2E8F0;
     cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s, opacity 0.2s;
 
     span {
-        font-size: 11px;
-        color: var(--tx4);
+        font-size: 13px; // Matching your other pages
+        font-weight: 700;
+        letter-spacing: -0.2px;
+        color: inherit !important; // Overrides your previous 11px setting
+    }
+
+    svg {
+        display: block;
+        color: var(--tx5);
+    }
+
+    &:active {
+        opacity: 0.7;
+        background: rgba(11, 15, 26, 0.90);
     }
 }
 
@@ -172,18 +199,24 @@
 .link-option {
     display: flex;
     align-items: center;
-    gap: 10px;
-    background: var(--green-bg-light);
-    border: 0.5px solid rgba(74, 222, 128, 0.20);
-    border-radius: 14px;
-    padding: 12px 13px;
+    gap: 12px;
+    background: rgba(74, 222, 128, 0.06); // Subtle green tint
+    border: 0.5px solid rgba(74, 222, 128, 0.15);
+    border-radius: 16px; // Matching the code box roundness
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:active {
+        background: rgba(74, 222, 128, 0.12);
+    }
 }
 
 .link-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    background: rgba(74, 222, 128, 0.10);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%; // Circular icon looks better for links
+    background: rgba(74, 222, 128, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;

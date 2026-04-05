@@ -1,5 +1,5 @@
 // src/app/components/home/home.component.ts
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
@@ -7,6 +7,7 @@ import { AppStateService } from '../../services/app-state.service';
 import { ForkupGroup, GroupMember } from '../../models/restaurant.model';
 import { generateRoomCode } from '../../data/mock-data';
 import { GoogleMapsModule, MapMarker } from '@angular/google-maps';
+import { YelpService } from '../../services/yelp.service';
 
 @Component({
   selector: 'app-home',
@@ -18,6 +19,10 @@ import { GoogleMapsModule, MapMarker } from '@angular/google-maps';
 export class HomeComponent {
   private router = inject(Router);
   readonly state = inject(AppStateService);
+
+  @Output() start = new EventEmitter<any[]>(); // <-- Update to emit the array
+
+  private yelp = inject(YelpService);
 
   // UI state
   showEndDialog = signal(false);
@@ -33,6 +38,8 @@ export class HomeComponent {
   }
 
   userLocation: google.maps.LatLngLiteral | undefined;
+  nearbyRestaurants: any[] = [];
+  fullRestaurantList: any[] = [];
 
   userMarkerIcon: any = {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -45,6 +52,66 @@ export class HomeComponent {
     scaledSize: { width: 24, height: 24 },
     anchor: { x: 12, y: 12 }
   };
+
+  restaurantIcon: any = {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" fill="#F59E0B" stroke="#131A24" stroke-width="2.5"/></svg>`),
+    scaledSize: { width: 16, height: 16 },
+    anchor: { x: 8, y: 8 }
+  };
+
+  dropMarkerOptions: google.maps.MarkerOptions = {
+    animation: google.maps.Animation.DROP
+  };
+
+  // 1. Map Yelp's dynamic cuisine text to your preferred emojis
+  getEmojiForCuisine(cuisine: string): string {
+    const c = cuisine.toLowerCase();
+    if (c.includes('mexican') || c.includes('taco')) return '🌮';
+    if (c.includes('burger') || c.includes('american') || c.includes('fast food')) return '🍔';
+    if (c.includes('pizza') || c.includes('italian')) return '🍕';
+    if (c.includes('sushi') || c.includes('japanese') || c.includes('seafood')) return '🍣';
+    if (c.includes('chinese') || c.includes('thai') || c.includes('asian') || c.includes('noodle')) return '🍜';
+    if (c.includes('coffee') || c.includes('cafe') || c.includes('tea')) return '☕';
+    if (c.includes('breakfast') || c.includes('brunch')) return '🥞';
+    if (c.includes('dessert') || c.includes('ice cream') || c.includes('bakery')) return '🍦';
+    return '🍽️'; // Default fallback
+  }
+
+  // 2. Dynamically generate the floating SVG marker
+  getRestaurantMarker(restaurant: any, index: number): any {
+    // Your exact original color palette
+    const themes = [
+      { bg: 'rgba(74, 222, 128, 0.22)', solid: '#15803D' },  // Green
+      { bg: 'rgba(96, 165, 250, 0.22)', solid: '#1D4ED8' },  // Blue
+      { bg: 'rgba(245, 158, 11, 0.22)', solid: '#B45309' },  // Orange
+      { bg: 'rgba(244, 114, 182, 0.22)', solid: '#BE185D' }, // Pink
+      { bg: 'rgba(167, 139, 250, 0.22)', solid: '#6D28D9' }  // Purple
+    ];
+
+    // Cycle through colors so the map is diverse
+    const theme = themes[index % themes.length];
+    const emoji = this.getEmojiForCuisine(restaurant.cuisine);
+
+    // Build the custom SVG with a drop shadow for the floating effect
+    const svg = `
+                                                                                                                       <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                                                                                                               <ellipse cx="20" cy="34" rx="8" ry="2.5" fill="rgba(0,0,0,0.5)" />
+
+                                                                                                                                               <g transform="translate(0, -4)">
+                                                                                                                                                         <circle cx="20" cy="20" r="16" fill="${theme.bg}" />
+                                                                                                                                                                   <circle cx="20" cy="20" r="11" fill="${theme.solid}" />
+                                                                                                                                                                             <text x="20" y="24" text-anchor="middle" font-size="12" font-family="Arial, sans-serif">${emoji}</text>
+                                                                                                                                                                                     </g>
+                                                                                                                                                                                           </svg>
+                                                                                                                                                                                               `;
+
+    return {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+      scaledSize: { width: 40, height: 40 },
+      anchor: { x: 20, y: 34 } // Anchors the marker exactly at the shadow's center
+    };
+  }
+
 
   // --- WAYMO-STYLE DARK MAP CONFIGURATION ---
   mapOptions: google.maps.MapOptions = {
@@ -76,24 +143,40 @@ export class HomeComponent {
   getUserLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
+        async (position) => {
+          this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+          this.mapOptions = { ...this.mapOptions, center: this.userLocation };
 
-          // Reassign mapOptions to trigger Angular to re-render the center
-          this.mapOptions = {
-            ...this.mapOptions,
-            center: this.userLocation
-          };
+          try {
+            // 1. Fetch the data and store it safely in the background
+            this.fullRestaurantList = await this.yelp.getRestaurants(
+              this.userLocation.lat,
+              this.userLocation.lng,
+              this.state.searchRadius()
+            );
+
+            // 2. Loop through the list and drop them on the map with a delay!
+            this.fullRestaurantList.forEach((restaurant, index) => {
+              setTimeout(() => {
+                // By pushing them one by one, the *ngFor creates them individually,
+                // triggering the DROP animation for each specific pin.
+                this.nearbyRestaurants.push(restaurant);
+              }, index * 80); // 80 millisecond delay between each drop
+            });
+
+          } catch (error) {
+            console.error('Yelp fetch failed:', error);
+          }
         },
-        (error) => {
-          console.error('Location access denied or failed.', error);
-        },
-        { enableHighAccuracy: true } // Forces GPS chip for precision
+        (error) => console.error('Location denied', error),
+        { enableHighAccuracy: true }
       );
     }
+  }
+
+  onStartClicked() {
+    // FIX: Emit the full list so we don't miss any if the user clicks quickly
+    this.start.emit(this.fullRestaurantList);
   }
 
   ngOnDestroy(): void {
@@ -147,15 +230,13 @@ export class HomeComponent {
   }
 
   // ── Actions ────────────────────────────────────────────────
-  async startSession(): Promise<void> {
-    if (this.creating()) return;
-    this.creating.set(true);
-    try {
-      const code = await this.state.startSession();
-      this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
-    } finally {
-      this.creating.set(false);
-    }
+  async startSession() {
+    // FIX: Pass the user's real live location, or use the fallback
+    const code = await this.state.startSession(
+      this.userLocation?.lat ?? 33.4152,
+      this.userLocation?.lng ?? -111.8315
+    );
+    this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
   }
 
   goJoin(): void {

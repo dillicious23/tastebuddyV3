@@ -81,16 +81,13 @@
 }
 
 .back-card-2 {
-    transform: translateY(20px) scale(0.89);
     transform-origin: center top;
     z-index: 1;
 }
 
 .back-card-1 {
-    transform: translateY(10px) scale(0.95);
     transform-origin: center top;
     z-index: 2;
-    transition: transform 0.4s cubic-bezier(0.22, 1.4, 0.36, 1);
 }
 
 .front-card {
@@ -107,95 +104,116 @@
 }
 
 // ── Card Internals (Passed down to app-card-content) ──────────
+// ── Card Internals (Passed down to app-card-content) ──────────
 ::ng-deep {
-
-    /* 1. FORCE THE ANGULAR COMPONENT TO ACT AS A FLEX CONTAINER */
     app-card-content {
         display: flex;
         flex-direction: column;
         height: 100%;
         width: 100%;
+        overflow: hidden;
     }
 
-    /* 2. THE IMAGE HEADER */
+    /* 1. THE MASSIVE IMAGE AREA */
     .card-image {
-        height: 190px;
+        flex: 1;
+        /* 💥 MAGIC: Forces the image to grow and fill all vertical space */
+        min-height: 0;
+        /* Prevents flexbox stretching bugs */
+        width: 100%;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        flex-shrink: 0;
-        overflow: hidden;
+        background: #0B0F1A;
+
+        /* Premium gradient shadow overlay at the bottom of the image */
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to top, rgba(19, 26, 36, 1), rgba(19, 26, 36, 0));
+            z-index: 2;
+            pointer-events: none;
+        }
 
         .card-emoji {
             font-size: 82px;
             line-height: 1;
+            position: relative;
+            z-index: 2;
         }
 
         .badge-cuisine,
         .badge-dist {
             position: absolute;
-            top: 12px;
-            background: rgba(11, 15, 26, 0.82);
-            backdrop-filter: blur(8px);
+            top: 14px;
+            background: rgba(11, 15, 26, 0.75);
+            backdrop-filter: blur(12px);
             border-radius: 20px;
-            padding: 5px 12px;
+            padding: 6px 14px;
             font-size: 11px;
             font-weight: 700;
-            color: var(--tx2);
+            color: #E2E8F0;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
+            z-index: 10;
         }
 
         .badge-cuisine {
-            right: 12px;
+            right: 14px;
         }
 
         .badge-dist {
-            left: 12px;
+            left: 14px;
         }
     }
 
-    /* 3. THE TEXT CONTENT */
+    /* 2. THE TIGHT TEXT BODY */
     .card-body {
-        padding: 16px 18px;
+        flex: none;
+        /* 💥 MAGIC: Forces the text to only take exactly the space it needs */
+        padding: 0px 20px 24px;
         display: flex;
         flex-direction: column;
-        flex: 1;
-        /* Allows this section to fill the space */
+        background: #131A24;
+        /* Matches the bottom of the gradient overlay perfectly */
+        position: relative;
+        z-index: 5;
     }
 
     .card-title-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
 
     .card-name {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 900;
-        color: var(--tx1);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        color: #F8FAFC;
+        line-height: 1.15;
     }
 
     .rating-badge {
         display: flex;
         align-items: center;
         gap: 4px;
-        background: rgba(245, 197, 24, 0.14);
+        background: rgba(245, 197, 24, 0.15);
         border-radius: 20px;
-        padding: 4px 10px;
+        padding: 5px 10px;
         flex-shrink: 0;
-        margin-left: 6px;
+        margin-left: 8px;
 
         span {
             font-size: 12px;
             font-weight: 800;
-            color: var(--star);
+            color: #F5C518;
         }
     }
 
@@ -203,36 +221,46 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
     .tag {
-        background: rgba(255, 255, 255, 0.05);
-        border: 0.5px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 5px 12px;
         font-size: 11px;
         font-weight: 600;
-        color: var(--tx2);
+        color: #94A3B8;
     }
 
-    /* 4. THE BOTTOM SOCIAL/VOTE BAR */
+    .yelp-tag {
+        display: inline-flex;
+        /* Ensures perfect vertical centering */
+        align-items: center;
+        background: rgba(255, 26, 26, 0.1);
+        border: 0.5px solid rgba(255, 26, 26, 0.2);
+        color: #F8FAFC;
+        text-decoration: none;
+        cursor: pointer;
+        padding: 4px 10px;
+        /* Slight padding tweak for balance */
+        border-radius: 8px;
+    }
+
     .social-bar {
-        margin-top: auto;
-        /* Magically pushes the bar to the absolute bottom of the card */
         border-radius: 14px;
         padding: 12px 14px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
 
         &.group-bar {
-            background: rgba(96, 165, 250, 0.07);
-            border: 0.5px solid rgba(96, 165, 250, 0.14);
+            background: rgba(96, 165, 250, 0.08);
+            border: 0.5px solid rgba(96, 165, 250, 0.15);
         }
 
         &.solo-bar {
-            background: rgba(245, 158, 11, 0.07);
+            background: rgba(245, 158, 11, 0.08);
             border: 0.5px solid rgba(245, 158, 11, 0.15);
         }
 
@@ -240,11 +268,11 @@
             flex: 1;
             font-size: 11px;
             font-weight: 600;
-            color: var(--tx3);
+            color: #94A3B8;
         }
 
         .social-score {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 800;
         }
 
@@ -252,7 +280,8 @@
             flex: 1;
             font-size: 11px;
             font-weight: 600;
-            color: rgba(245, 158, 11, 0.8);
+            color: rgba(245, 158, 11, 0.9);
+            line-height: 1.4;
         }
     }
 }
