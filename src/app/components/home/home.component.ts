@@ -6,13 +6,15 @@ import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { ForkupGroup, GroupMember } from '../../models/restaurant.model';
 import { generateRoomCode } from '../../data/mock-data';
-import { GoogleMapsModule, MapMarker } from '@angular/google-maps';
+import { GoogleMapsModule, MapMarker, MapCircle } from '@angular/google-maps';
 import { YelpService } from '../../services/yelp.service';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, IonicModule, GoogleMapsModule, MapMarker],
+  imports: [CommonModule, IonicModule, GoogleMapsModule, MapMarker, MapCircle],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -32,6 +34,7 @@ export class HomeComponent {
   newRoomCode = signal('');
   mapPulse = signal(0);
   private _rafId = 0;
+  loadingLocation = signal(true);
 
   constructor() {
     this._animatePulse();
@@ -62,6 +65,26 @@ export class HomeComponent {
   dropMarkerOptions: google.maps.MarkerOptions = {
     animation: google.maps.Animation.DROP
   };
+
+  get radiusOptions(): google.maps.CircleOptions {
+    return {
+      // Convert miles from your AppState into meters
+      radius: this.state.searchRadius() * 1609.34,
+      fillColor: '#60A5FA', // Tastebuddy Blue
+      fillOpacity: 0.05,    // Very subtle fill so it doesn't hide roads
+      strokeColor: '#60A5FA',
+      strokeOpacity: 0.3,
+      strokeWeight: 1.5,
+      clickable: false,     // Ensures the circle doesn't block clicks on the map itself
+    };
+  }
+
+
+  refreshMap() {
+    this.nearbyRestaurants = []; // Clear current pins
+    this.loadingLocation.set(true);
+    this.getUserLocation();
+  }
 
   // 1. Map Yelp's dynamic cuisine text to your preferred emojis
   getEmojiForCuisine(cuisine: string): string {
@@ -136,39 +159,71 @@ export class HomeComponent {
   };
 
   ngOnInit(): void {
-    this.getUserLocation();
+    // 💥 FIX: Check if we already have the map data saved
+    const savedLoc = this.state.lastLocation();
+    const savedRest = this.state.lastRestaurants();
+
+    if (savedLoc && savedRest.length > 0) {
+      // Instantly restore the map without fetching or animations
+      this.userLocation = savedLoc;
+      this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+      this.fullRestaurantList = savedRest;
+      this.nearbyRestaurants = savedRest; // Load all at once, no drop delay
+      this.loadingLocation.set(false);
+    } else {
+      // First time loading the app, do the full fetch and animation
+      this.getUserLocation();
+    }
   }
 
-  // NEW: Ask the phone/browser for GPS coordinates
+  selectedRestaurant = signal<any | null>(null);
+
+  openRestaurantCard(r: any) {
+    this.selectedRestaurant.set(r);
+  }
+
+  closeDetail() {
+    this.selectedRestaurant.set(null);
+  }
+
   getUserLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
+          this.loadingLocation.set(false);
           this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
           this.mapOptions = { ...this.mapOptions, center: this.userLocation };
 
           try {
-            // 1. Fetch the data and store it safely in the background
             this.fullRestaurantList = await this.yelp.getRestaurants(
               this.userLocation.lat,
               this.userLocation.lng,
               this.state.searchRadius()
+              // (Make sure your Yelp service is also passing state.selectedCuisines() here!)
             );
 
-            // 2. Loop through the list and drop them on the map with a delay!
+            // 💥 FIX: Log the parameters we just used so the "Stale" detector resets to false
+            this.state.lastFetchRadius.set(this.state.searchRadius());
+            this.state.lastFetchCuisines.set(this.state.selectedCuisines());
+
+            this.state.lastLocation.set(this.userLocation);
+            this.state.lastRestaurants.set(this.fullRestaurantList);
+
             this.fullRestaurantList.forEach((restaurant, index) => {
               setTimeout(() => {
-                // By pushing them one by one, the *ngFor creates them individually,
-                // triggering the DROP animation for each specific pin.
                 this.nearbyRestaurants.push(restaurant);
-              }, index * 80); // 80 millisecond delay between each drop
+              }, index * 80);
             });
 
           } catch (error) {
             console.error('Yelp fetch failed:', error);
+            this.loadingLocation.set(false);
           }
         },
-        (error) => console.error('Location denied', error),
+        (error) => {
+          console.error('Location denied', error);
+          this.loadingLocation.set(false);
+        },
         { enableHighAccuracy: true }
       );
     }
@@ -231,12 +286,16 @@ export class HomeComponent {
 
   // ── Actions ────────────────────────────────────────────────
   async startSession() {
-    // FIX: Pass the user's real live location, or use the fallback
-    const code = await this.state.startSession(
-      this.userLocation?.lat ?? 33.4152,
-      this.userLocation?.lng ?? -111.8315
-    );
-    this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
+    this.creating.set(true);
+    try {
+      const code = await this.state.startSession(
+        this.userLocation?.lat ?? 33.4152,
+        this.userLocation?.lng ?? -111.8315
+      );
+      this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
+    } finally {
+      this.creating.set(false);
+    }
   }
 
   goJoin(): void {
@@ -271,16 +330,43 @@ export class HomeComponent {
     if (!this.selectedGroup()) return;
     this.creating.set(true);
     try {
-      await this.state.startSession();
-      this.router.navigate(['/tabs/swipe']);
+      const code = await this.state.startSession(
+        this.userLocation?.lat ?? 33.4152,
+        this.userLocation?.lng ?? -111.8315,
+        this.newRoomCode()
+      );
+      this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
     } finally {
       this.creating.set(false);
     }
   }
 
-  shareCode(): void {
-    // In production: navigator.share({ text: this.state.activeRoomCode() })
-    console.log('Share code:', this.state.activeRoomCode());
+  async shareCode() {
+    const code = this.state.activeRoomCode();
+    const inviteLink = `https://tastebuddy.app/join/${code}`;
+
+    try {
+      // 💥 1. Check if we are running on a real phone (iOS/Android)
+      if (Capacitor.isNativePlatform()) {
+        await Share.share({
+          title: 'Join my Tastebuddy room!',
+          text: `Help me decide where to eat! Tap the link or enter code ${code}`,
+          url: inviteLink,
+          dialogTitle: 'Invite friends'
+        });
+      } else {
+        // If testing on the web, force the fallback
+        throw new Error('Not running on a native device');
+      }
+    } catch (error) {
+      // 💥 2. Fallback: Copy the FULL link and show an alert so you know it worked
+      navigator.clipboard.writeText(inviteLink).then(() => {
+        alert(`Invite link copied to clipboard!\n\n${inviteLink}`);
+      }).catch(() => {
+        // Just in case the clipboard API is completely blocked
+        alert(`Tell your friends to join room: ${code}`);
+      });
+    }
   }
 
   goGroupDetail(id: string): void {

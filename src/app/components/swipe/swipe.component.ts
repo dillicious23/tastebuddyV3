@@ -9,6 +9,7 @@ import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { Restaurant } from '../../models/restaurant.model';
 import { CardContentComponent } from './card-content.component';
+import { Share } from '@capacitor/share';
 
 type SwipeDir = 'left' | 'right' | null;
 
@@ -199,20 +200,28 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
   async shareCode(): Promise<void> {
     const code = this.state.activeRoomCode();
-    const shareText = `Join my Tastebuddy room! Code: ${code}`;
+    const inviteLink = `https://tastebuddy.app/join/${code}`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Tastebuddy Room',
-          text: shareText,
+    try {
+      // Check if the device natively supports sharing
+      const { value } = await Share.canShare();
+
+      if (value) {
+        await Share.share({
+          title: 'Join my Tastebuddy room!',
+          text: `Help me decide where to eat! Tap the link or enter code ${code}`,
+          url: inviteLink,
+          dialogTitle: 'Invite friends'
         });
-      } catch (err) {
-        console.log('Share dismissed or failed');
+      } else {
+        throw new Error('Sharing not supported');
       }
-    } else {
-      // Fallback if they are on a desktop browser that doesn't support sharing
-      this.copyCode();
+    } catch (err) {
+      // Fallback if share sheet fails
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(inviteLink);
+        alert(`Invite link copied to clipboard!\n\n${inviteLink}`);
+      }
     }
   }
 

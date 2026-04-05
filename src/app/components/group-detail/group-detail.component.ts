@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 // src/app/components/group-detail/group-detail.component.ts
 
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
@@ -54,6 +54,11 @@ import { generateRoomCode } from '../../data/mock-data';
     <div class="scroll-area" style="flex:1;padding:0 12px 16px">
       <p class="section-header">Session history</p>
 
+      <button class="btn-danger" style="margin-top: 24px; margin-bottom: 24px; width: 100%;" 
+              (click)="showDeleteConfirm.set(true)">
+        Delete group history
+      </button>
+
       <div *ngFor="let s of group.sessions" class="session-row ghost-card br-md">
         <div class="session-top">
           <span style="font-size:11px;font-weight:600;color:var(--tx1)">{{ s.timeAgo }}</span>
@@ -70,7 +75,7 @@ import { generateRoomCode } from '../../data/mock-data';
               <span class="session-name">{{ s.matches[0].restaurant.name }}</span>
               <span class="session-meta">{{ s.matches[0].restaurant.cuisine }} · matched {{ s.matches[0].agreedCount }}/{{ s.matches[0].totalCount }}</span>
             </div>
-            <div class="map-btn">Map</div>
+            <div class="map-btn" (click)="openMap(s.matches[0].restaurant)">Map</div>
           </div>
         </ng-container>
 
@@ -87,6 +92,19 @@ import { generateRoomCode } from '../../data/mock-data';
       </div>
     </div>
   </ng-container>
+
+  <div class="sheet-overlay" *ngIf="showDeleteConfirm()" (click)="showDeleteConfirm.set(false)">
+    <div class="sheet-body end-dialog" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="dialog-emoji" style="font-size: 40px; margin-bottom: 10px; text-align: center;">🗑️</div>
+      <h3 class="dialog-title" style="text-align: center; font-size: 18px; font-weight: 800; color: var(--tx1); margin-bottom: 8px;">Delete group history?</h3>
+      <p class="dialog-body" style="text-align: center; font-size: 13px; color: var(--tx3); margin-bottom: 24px; padding: 0 10px;">
+        This will permanently remove this group and all its past sessions from your device.
+      </p>
+      <button class="btn-danger" style="margin-bottom:8px; width: 100%;" (click)="doDelete()">Delete group</button>
+      <button class="btn-secondary" style="width: 100%; background: var(--card); border: 0.5px solid rgba(255,255,255,0.1); border-radius: 12px; height: 48px; color: var(--tx1); font-weight: 700;" (click)="showDeleteConfirm.set(false)">Cancel</button>
+    </div>
+  </div>
 
 </div>
   `,
@@ -155,11 +173,36 @@ export class GroupDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private state = inject(AppStateService);
 
+  showDeleteConfirm = signal(false);
+
   group: ForkupGroup | null = null;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     this.group = this.state.groups().find(g => g.id === id) ?? null;
+  }
+
+  openMap(restaurant: any): void {
+    const url = `https://maps.google.com/?q=${restaurant.lat},${restaurant.lng}`;
+    window.open(url, '_system');
+  }
+
+  doDelete(): void {
+    if (this.group?.id) {
+      this.state.deleteGroup(this.group.id);
+      this.showDeleteConfirm.set(false);
+      this.router.navigate(['/tabs/groups'], { replaceUrl: true });
+    }
+  }
+
+  deleteGroup(): void {
+    // Native browser confirmation popup
+    if (confirm('Are you sure you want to delete this group? This cannot be undone.')) {
+      if (this.group?.id) {
+        this.state.deleteGroup(this.group.id);
+        this.router.navigate(['/tabs/groups'], { replaceUrl: true }); // Go back to list
+      }
+    }
   }
 
   get shortName(): string {

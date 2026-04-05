@@ -126,7 +126,11 @@ import { Restaurant } from '../../models/restaurant.model';
     :host { display:block; height:100%; }
     .result-image { height:80px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
     
-    .back-row { padding: 14px 16px 6px; }
+    .back-row { 
+      padding: max(env(safe-area-inset-top), 36px) 16px 6px; 
+      position: relative;
+      z-index: 100;
+    }
     .back-pill {
       display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
       background: rgba(11, 15, 26, 0.70); backdrop-filter: blur(14px);

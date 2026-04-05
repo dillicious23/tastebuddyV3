@@ -7,11 +7,15 @@ import { Restaurant } from '../models/restaurant.model';
 export class YelpService {
     private http = inject(HttpClient);
 
+    // The cors-anywhere proxy prevents browser blocks during local testing.
     private baseUrl = 'https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search';
+
+    // Your actual Yelp API Key
     private apiKey = 'BcGuIBO_29gP4DdK-1IHudB0S9CRw3WZUtwfxXCaMBOkGePM706cRTrUZVx6NWH-45LRox0LPhr1wb-e2SJOx2QjP4_2Id29SOmtlGaTsKxwnrxrpci9drKjCQ1pZXYx';
 
     private getVisuals(categories: any[]) {
         const cats = categories.map((c: any) => c.alias.toLowerCase()).join(' ');
+
         if (cats.includes('pizza')) return { emoji: '🍕', color: '#EF4444', bg: 'linear-gradient(135deg, #EF4444, #7F1D1D)' };
         if (cats.includes('mexican') || cats.includes('tacos')) return { emoji: '🌮', color: '#F59E0B', bg: 'linear-gradient(135deg, #F59E0B, #78350F)' };
         if (cats.includes('sushi') || cats.includes('japanese')) return { emoji: '🍣', color: '#EC4899', bg: 'linear-gradient(135deg, #EC4899, #831843)' };
@@ -23,13 +27,23 @@ export class YelpService {
         if (cats.includes('seafood')) return { emoji: '🦐', color: '#3B82F6', bg: 'linear-gradient(135deg, #3B82F6, #1E3A8A)' };
         if (cats.includes('dessert') || cats.includes('icecream') || cats.includes('bakeries')) return { emoji: '🍩', color: '#F472B6', bg: 'linear-gradient(135deg, #F472B6, #831843)' };
         if (cats.includes('chicken') || cats.includes('wings')) return { emoji: '🍗', color: '#F97316', bg: 'linear-gradient(135deg, #F97316, #7C2D12)' };
-        if (cats.includes('indpak') || cats.includes('indian')) return { emoji: '🍛', color: '#F59E0B', bg: 'linear-gradient(135deg, #F59E0B, #92400E)' };
-        if (cats.includes('salad') || cats.includes('vegan') || cats.includes('vegetarian')) return { emoji: '🥗', color: '#22C55E', bg: 'linear-gradient(135deg, #22C55E, #14532D)' };
+
         return { emoji: '🍽️', color: '#64748B', bg: 'linear-gradient(135deg, #64748B, #0F172A)' };
     }
 
-    // ✅ Added categories param — empty string means no filter (all cuisines)
-    async getRestaurants(lat: number, lng: number, radiusMiles: number, categories: string = ''): Promise<Restaurant[]> {
+    // 💥 FIX 2: Safely inside the class now
+    private getExactDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+        const R = 6371000; // Radius of the Earth in meters
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    // 💥 FIX 1: Accepts a string OR a string array
+    async getRestaurants(lat: number, lng: number, radiusMiles: number, cuisines?: string | string[]): Promise<Restaurant[]> {
         const headers = new HttpHeaders({
             Authorization: `Bearer ${this.apiKey}`,
             accept: 'application/json'
@@ -37,37 +51,44 @@ export class YelpService {
 
         const radiusMeters = Math.min(Math.floor(radiusMiles * 1609.34), 40000);
 
-        let url = `${this.baseUrl}?latitude=${lat}&longitude=${lng}&radius=${radiusMeters}&limit=20&term=restaurants`;
-
-        // ✅ Only add categories if user picked specific ones
-        if (categories) {
-            url += `&categories=${categories}`;
+        let searchQuery = 'restaurants';
+        if (cuisines) {
+            // Handles both string and array inputs automatically
+            searchQuery = Array.isArray(cuisines) ? cuisines.join(',') : cuisines;
+            if (!searchQuery.trim()) searchQuery = 'restaurants';
         }
+
+        const url = `${this.baseUrl}?latitude=${lat}&longitude=${lng}&radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
 
         const response: any = await firstValueFrom(this.http.get(url, { headers }));
 
-        return response.businesses.map((b: any) => {
+        const strictBusinesses = response.businesses.filter((b: any) => {
+            if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
+
+            const exactMeters = this.getExactDistance(lat, lng, b.coordinates.latitude, b.coordinates.longitude);
+            return exactMeters <= radiusMeters;
+        });
+
+        return strictBusinesses.map((b: any) => {
             const hasReservations = b.transactions && b.transactions.includes('restaurant_reservation');
             const visuals = this.getVisuals(b.categories || []);
+
             return {
                 id: b.id,
                 name: b.name,
-                cuisine: b.categories?.length > 0 ? b.categories[0].title : 'Food',
+                cuisine: b.categories && b.categories.length > 0 ? b.categories[0].title : 'Food',
                 dist: (b.distance / 1609.34).toFixed(1) + ' mi',
                 price: b.price || '$$',
                 rating: b.rating,
                 imageUrl: b.image_url,
-                lat: b.coordinates?.latitude,
-                lng: b.coordinates?.longitude,
+                lat: b.coordinates.latitude,
+                lng: b.coordinates.longitude,
                 yelpUrl: b.url,
                 isOpenNow: !b.is_closed,
                 takesReservations: hasReservations,
                 emoji: visuals.emoji,
                 color: visuals.color,
-                bg: visuals.bg,
-                label: '',
-                score: '',
-                friends: [],
+                bg: visuals.bg
             };
         });
     }

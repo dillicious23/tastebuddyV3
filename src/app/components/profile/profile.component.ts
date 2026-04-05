@@ -29,7 +29,7 @@ export class ProfileComponent {
 
   editing = signal(false);
   editedName = signal('');
-  notificationsOn = signal(true);
+  // notificationsOn = signal(true);
 
   readonly suggestions = USERNAME_SUGGESTIONS;
 

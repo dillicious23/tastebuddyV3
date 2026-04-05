@@ -171,3 +171,19 @@
     margin-bottom: 16px;
     line-height: 1.6;
 }
+
+.top-logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    /* Adjust spacing as needed */
+}
+
+.custom-app-logo {
+    width: 60px;
+    /* Adjust size as needed */
+    height: auto;
+    /* Maintains aspect ratio */
+    border-radius: 12px;
+    /* Optional: Rounds the corners of the logo */
+}

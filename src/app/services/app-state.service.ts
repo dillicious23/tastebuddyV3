@@ -51,9 +51,25 @@ export class AppStateService {
   readonly isWaiting = computed(() => this._state().isWaiting ?? false);
   readonly groups = computed(() => this._state().groups);
   readonly searchRadius = computed(() => this._state().searchRadius);
+  readonly lastLocation = signal<{ lat: number, lng: number } | null>(null);
+  readonly lastRestaurants = signal<any[]>([]);
+  readonly lastFetchRadius = signal<number>(0);
+  readonly lastFetchCuisines = signal<string[]>([]);
 
   readonly deck = signal<Restaurant[]>([...RESTAURANTS]);
   readonly latestMatch = signal<Restaurant | null>(null);
+
+  readonly isDataStale = computed(() => {
+    const currentRadius = this.searchRadius();
+    const currentCuisines = this.selectedCuisines().join(',');
+    const oldRadius = this.lastFetchRadius();
+    const oldCuisines = this.lastFetchCuisines().join(',');
+
+    // If we haven't fetched yet (0), it's not stale, it's just empty
+    if (oldRadius === 0) return false;
+
+    return currentRadius !== oldRadius || currentCuisines !== oldCuisines;
+  });
 
   // NEW: Live signals for the results screen
   readonly liveMatches = signal<SessionMatch[]>([]);
@@ -155,13 +171,11 @@ export class AppStateService {
     this.partialMatches.set([]);
   }
 
-  async startSession(lat: number = 33.4152, lng: number = -111.8315): Promise<string> {
-    const code = generateRoomCode();
+  async startSession(lat: number = 33.4152, lng: number = -111.8315, existingCode?: string): Promise<string> {
+    // 💥 Use the passed code if it exists, otherwise generate a new one
+    const code = existingCode || generateRoomCode();
 
-    // ✅ Convert selected cuisines to Yelp category string
-    const yelpCategories = toYelpCategories(this.selectedCuisines());
-
-    await this.fb.createRoom(code, this.myUid, this._state().username, lat, lng, this._state().searchRadius, yelpCategories);
+    await this.fb.createRoom(code, this.myUid, this._state().username, lat, lng, this._state().searchRadius);
 
     this._state.update(s => ({
       ...s,
@@ -175,6 +189,14 @@ export class AppStateService {
 
     this.listenToRoom(code);
     return code;
+  }
+
+  deleteGroup(groupId: string): void {
+    const currentGroups = this._state().groups;
+    const updatedGroups = currentGroups.filter(g => g.id !== groupId);
+
+    saveGroups(updatedGroups); // Updates localStorage
+    this._state.update(s => ({ ...s, groups: updatedGroups })); // Updates UI
   }
 
   async joinSession(code: string): Promise<boolean> {

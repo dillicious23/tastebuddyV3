@@ -4,8 +4,10 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'launch',
     pathMatch: 'full',
+    redirectTo: () => {
+      return localStorage.getItem('tb_has_launched') === 'true' ? '/tabs/home' : '/launch';
+    }
   },
   {
     path: 'launch',

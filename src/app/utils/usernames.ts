@@ -1,0 +1,22 @@
+export const RANDOM_USERNAMES = [
+    'BaconBaron', 'SteakMaster', 'BurgerBoss', 'KetoKing', 'HoldTheMustard',
+    'NoOnionsPlz', 'PickleHater', 'RibeyeRanger', 'HungryHippo', 'TacoCat',
+    'PizzaNinja', 'SushiSnob', 'WaffleWarrior', 'CheeseChampion', 'FryFanatic',
+    'WingWizard', 'BrisketBro', 'PorkChopPal', 'HamHero', 'SausageSavant',
+    'GrillGuru', 'SmokeSnob', 'BBQBaron', 'FlavorFanatic', 'SnackSavant',
+    'CrunchCaptain', 'ChewChampion', 'MunchMaster', 'NibbleNinja', 'BiteBoss',
+    'SalsaSultan', 'GuacGod', 'QuesoQueen', 'BeanBoss', 'SpiceSpecialist',
+    'NoodleKing', 'PancakePal', 'ToastTitan', 'MuffinMan', 'EggExplorer',
+    'MildMaster', 'SweetSnob', 'SaltySavant', 'UmamiUser', 'TasteTitan',
+    'SipSnob', 'GulpGuru', 'ChugChief', 'BrewBaron', 'JuiceJedi',
+    'SodaSnob', 'PopPal', 'ColaCaptain', 'WaterWizard', 'IceInspector',
+    'FrostFanatic', 'ChillChief', 'ColdCaptain', 'CoolCommander', 'HotHero',
+    'WarmWarrior', 'HeatHacker', 'FireFanatic', 'FlameFiend', 'BurnBoss',
+    'BlazeBaron', 'CrispCaptain', 'CrunchyChief', 'SoftSnob', 'FluffyFanatic',
+    'SmoothSavant', 'SilkySpecialist', 'VelvetViewer', 'PlushPal', 'TenderTitan',
+    'GentleGuru', 'RoughRanger', 'HardHero', 'ToughTitan', 'SolidSnob',
+    'FirmFanatic', 'HeavyHero', 'LightLord', 'AiryAce', 'BreezyBoss',
+    'WindyWizard', 'GustyGuru', 'StormySnob', 'CloudyCaptain', 'FoggyFanatic',
+    'MacaroniMaster', 'RamenRider', 'SoupSovereign', 'ChiliChief', 'CurryCaptain',
+    'PepperPal', 'GarlicGuru', 'BasilBoss', 'HerbHero', 'SavorySavant'
+];

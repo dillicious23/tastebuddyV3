@@ -1,11 +1,11 @@
 // src/app/components/launch/launch.component.ts
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
-import { USERNAME_SUGGESTIONS } from '../../data/mock-data';
+import { RANDOM_USERNAMES } from '../../utils/usernames';
 
 @Component({
   selector: 'app-launch',
@@ -74,6 +74,13 @@ export class LaunchComponent {
   focused = signal(false);
   suggestions = USERNAME_SUGGESTIONS;
 
+  ngOnInit() {
+    // Skip if they have already completed this screen
+    if (localStorage.getItem('tb_has_launched')) {
+      this.router.navigate(['/tabs/home'], { replaceUrl: true });
+    }
+  }
+
   pick(s: string): void { this.username = s; }
   shuffle(): void {
     const others = this.suggestions.filter(s => s !== this.username);
@@ -83,6 +90,7 @@ export class LaunchComponent {
   proceed(): void {
     const name = this.username.trim() || USERNAME_SUGGESTIONS[0];
     this.stateService.setUsername(name);
-    this.router.navigate(['/tabs/home']);
+    localStorage.setItem('tb_has_launched', 'true');
+    this.router.navigate(['/tabs/home'], { replaceUrl: true });
   }
 }

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
+import { Clipboard } from '@capacitor/clipboard';
 
 @Component({
   selector: 'app-join',
@@ -31,6 +32,28 @@ export class JoinComponent implements AfterViewInit {
   // Derive display chars from the code string
   get chars(): string[] {
     return this.code().toUpperCase().slice(0, 4).split('');
+  }
+
+  // 💥 UPGRADED: Uses native Capacitor Clipboard for Android/iOS support
+  async handlePaste() {
+    try {
+      // Ask the native phone OS for the clipboard contents directly
+      const { value } = await Clipboard.read();
+      const text = value || '';
+
+      const match = text.match(/([A-Z0-9]{4})\/?$/i);
+
+      if (match) {
+        this.code.set(match[1].toUpperCase());
+        this.error.set(false);
+        this.submit(); // Auto-join!
+      } else {
+        alert('We couldn\'t find a valid link in your clipboard. Make sure you copied it!');
+      }
+    } catch (err) {
+      console.error('Could not read clipboard', err);
+      alert('Failed to read the clipboard. Please try typing the code manually.');
+    }
   }
 
   boxClass(i: number): string {

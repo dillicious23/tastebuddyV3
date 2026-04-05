@@ -5,20 +5,44 @@
   <div class="map-bg">
     <google-map height="100%" width="100%" [options]="mapOptions">
 
+      <map-circle *ngIf="userLocation" [center]="userLocation" [options]="radiusOptions">
+      </map-circle>
+
       <map-marker *ngIf="userLocation" [position]="userLocation" [icon]="userMarkerIcon"></map-marker>
 
       <map-marker *ngFor="let r of nearbyRestaurants; let i = index" [position]="{ lat: r.lat, lng: r.lng }"
-        [icon]="getRestaurantMarker(r, i)" [title]="r.name" [options]="dropMarkerOptions">
-      </map-marker>
+        [icon]="getRestaurantMarker(r, i)" [title]="r.name" [options]="dropMarkerOptions"
+        (mapClick)="openRestaurantCard(r)"> </map-marker>
 
 
     </google-map>
+  </div>
+
+  <div *ngIf="loadingLocation()"
+    style="position:absolute;top:15%;left:50%;transform:translateX(-50%);z-index:10;background:rgba(19, 26, 36, 0.8);backdrop-filter:blur(10px);padding:10px 18px;border-radius:20px;color:white;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;border:0.5px solid rgba(255,255,255,0.1);box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+    <ion-spinner name="crescent" style="width:16px;height:16px;color:#60A5FA"></ion-spinner>
+    Finding your location...
   </div>
 
   <!-- ── Top bar ──────────────────────────────────────────────── -->
   <div class="top-bar safe-top">
     <span class="logo-text">taste<span>buddy</span></span>
     <div class="avatar-btn" (click)="goProfile()">{{ state.username()[0]?.toUpperCase() || '?' }}</div>
+  </div>
+
+  <div *ngIf="state.isDataStale()"
+    style="position: absolute; top: max(env(safe-area-inset-top), 65px); left: 0; right: 0; display: flex; justify-content: center; z-index: 10;">
+
+    <button (click)="refreshMap()"
+      style="background: rgba(11, 15, 26, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 9px 20px; border-radius: 30px; color: #FFFFFF; font-weight: 700; font-size: 13px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s;">
+
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      Search this area
+    </button>
   </div>
 
   <!-- ── Bottom panel ─────────────────────────────────────────── -->
@@ -197,6 +221,42 @@
       <p class="sheet-note">
         This takes you to the waiting screen so you can share before anyone starts swiping
       </p>
+    </div>
+  </div>
+
+  <div class="sheet-overlay" *ngIf="selectedRestaurant()" (click)="closeDetail()">
+    <div class="sheet-body" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="detail-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div class="detail-icon" [style.background]="selectedRestaurant()!.bg"
+          style="position:relative; overflow:hidden; width: 54px; height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;">
+          <img *ngIf="selectedRestaurant()!.imageUrl" [src]="selectedRestaurant()!.imageUrl"
+            style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;" />
+          <span *ngIf="!selectedRestaurant()!.imageUrl" style="position:relative; z-index:2">{{
+            selectedRestaurant()!.emoji }}</span>
+        </div>
+        <div class="detail-meta">
+          <h3 class="detail-name" style="margin:0; font-size:17px; font-weight:800; color:var(--tx1);">{{
+            selectedRestaurant()!.name }}</h3>
+          <p class="detail-sub" style="margin:0; font-size:11px; color:var(--tx3);">{{ selectedRestaurant()!.cuisine }}
+            · {{ selectedRestaurant()!.price }}</p>
+          <div class="detail-rating" style="display:flex; align-items:center; gap:4px;">
+            <svg width="10" height="10" viewBox="0 0 10 10">
+              <path d="M5 1L6.2 3.8L9 4.1L7 6L7.6 9L5 7.5L2.4 9L3 6L1 4.1L3.8 3.8Z" fill="#F5C518" />
+            </svg>
+            <span style="font-size:11px;font-weight:700;color:var(--star)">{{ selectedRestaurant()!.rating }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-actions" style="margin-top: 15px;">
+        <a *ngIf="selectedRestaurant()!.yelpUrl" [href]="selectedRestaurant()!.yelpUrl" target="_blank"
+          class="detail-like"
+          style="display:flex;align-items:center;justify-content:center;text-decoration:none;width:100%; height:44px; background:var(--green); border-radius:12px; font-size:13px; color:var(--green-ink); font-weight:800;">
+          <img src="assets/icon/yelp_burst.svg"
+            style="width: 14px; height: 14px; margin-right: 6px; object-fit: contain;" alt="Yelp">
+          Open in Yelp
+        </a>
+      </div>
     </div>
   </div>
 

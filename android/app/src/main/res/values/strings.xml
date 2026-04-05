@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">tastebuddyV2</string>
-    <string name="title_activity_main">tastebuddyV2</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="app_name">tastebuddy</string>
+    <string name="title_activity_main">tastebuddy</string>
+    <string name="package_name">com.tastebuddy.app</string>
+    <string name="custom_url_scheme">com.tastebuddy.app</string>
 </resources>
