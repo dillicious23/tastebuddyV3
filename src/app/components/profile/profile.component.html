@@ -1,15 +1,28 @@
 <!-- src/app/components/profile/profile.component.html -->
 <div class="screen profile-screen">
 
-  <!-- ── Avatar + name + stats ─────────────────────────────── -->
+  <!-- ── Avatar Picker Modal ───────────────────────────────────── -->
+  <div class="avatar-picker-overlay" *ngIf="showAvatarPicker()" (click)="closeAvatarPicker()">
+    <div class="avatar-picker-sheet" (click)="$event.stopPropagation()">
+      <p class="picker-title">Choose your avatar</p>
+      <div class="avatar-grid">
+        <button *ngFor="let a of allAvatars" class="avatar-option" [class.selected]="userAvatar() === a"
+          (click)="selectAvatar(a)">
+          {{ a }}
+        </button>
+      </div>
+      <button class="picker-close" (click)="closeAvatarPicker()">Done</button>
+    </div>
+  </div>
+
+  <!-- ── Hero ─────────────────────────────── -->
   <div class="hero safe-top">
 
-    <!-- Avatar -->
-    <div class="avatar-wrap">
-      <div class="avatar-circle">🦦</div>
+    <div class="avatar-wrap" (click)="openAvatarPicker()">
+      <div class="avatar-circle">{{ userAvatar() }}</div>
       <div class="avatar-edit">
         <svg width="10" height="10" viewBox="0 0 10 10">
-          <path d="M7 1.5L8.5 3L3.5 8H2V6.5L7 1.5Z" stroke="#64748B" stroke-width="1" stroke-linecap="round"
+          <path d="M7 1.5L8.5 3L3.5 8H2V6.5L7 1.5Z" stroke="#fff" stroke-width="1" stroke-linecap="round"
             stroke-linejoin="round" />
         </svg>
       </div>
@@ -58,21 +71,6 @@
       </div>
     </ng-container>
 
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat-box">
-        <span class="stat-val green">47</span>
-        <span class="stat-label">Swipes</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-val purple">12</span>
-        <span class="stat-label">Matches</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-val blue">8</span>
-        <span class="stat-label">Sessions</span>
-      </div>
-    </div>
   </div>
 
   <!-- ── Preferences list ───────────────────────────────────── -->
@@ -81,21 +79,6 @@
     <p class="section-header">Preferences</p>
 
     <div class="pref-group ghost-card br-md">
-
-      <!-- Location toggle -->
-      <div class="pref-row">
-        <svg width="15" height="15" viewBox="0 0 15 15">
-          <path d="M7.5 1C5 1 3 3.2 3 5.6C3 8.6 7.5 13 7.5 13S12 8.6 12 5.6C12 3.2 10 1 7.5 1Z" stroke="#60A5FA"
-            stroke-width="1.1" />
-          <circle cx="7.5" cy="5.6" r="1.6" fill="#60A5FA" />
-        </svg>
-        <span class="pref-label">Location</span>
-        <div class="toggle-track" [class.off]="!locationOn()" (click)="locationOn.set(!locationOn())">
-          <div class="toggle-thumb"></div>
-        </div>
-      </div>
-
-      <div class="pref-divider"></div>
 
       <!-- Notifications toggle -->
       <div class="pref-row">
@@ -113,7 +96,7 @@
 
       <div class="pref-divider"></div>
 
-      <!-- Search radius → navigates -->
+      <!-- Search radius -->
       <div class="pref-row pref-link" (click)="goPreferences('radius')">
         <svg width="15" height="15" viewBox="0 0 15 15">
           <circle cx="7.5" cy="7.5" r="5.5" stroke="#64748B" stroke-width="1.1" />
@@ -121,28 +104,33 @@
         </svg>
         <span class="pref-label">Search radius</span>
         <span class="pref-value">{{ radiusLabel }}</span>
-        <svg width="12" height="12" viewBox="0 0 12 12">
-          <path d="M4 2l4 4-4 4" stroke="#1E293B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <span class="chevron-wrap">
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+            <path d="M1 1l5 5-5 5" stroke="#475569" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
       </div>
 
       <div class="pref-divider"></div>
 
-      <!-- Cuisine filters → navigates -->
+      <!-- Cuisine filters — improved fork+knife icon -->
       <div class="pref-row pref-link" (click)="goPreferences('cuisine')">
-        <svg width="15" height="15" viewBox="0 0 15 15">
-          <rect x="2" y="2" width="11" height="11" rx="2" stroke="#64748B" stroke-width="1.1" />
-          <path d="M5.5 7.5h4M7.5 5.5v4" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M4 2v3.5c0 1 .7 1.8 1.5 2V13" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
+          <path d="M5.5 2v2M4 4h3" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
+          <path d="M10.5 2c0 0 1.5 1.5 1.5 3.5 0 1-.6 1.8-1.5 2V13" stroke="#64748B" stroke-width="1.1"
+            stroke-linecap="round" />
         </svg>
         <span class="pref-label">Cuisine filters</span>
-        <span class="pref-value">All</span>
-        <svg width="12" height="12" viewBox="0 0 12 12">
-          <path d="M4 2l4 4-4 4" stroke="#1E293B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <span class="pref-value">{{ cuisineLabel }}</span>
+        <span class="chevron-wrap">
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+            <path d="M1 1l5 5-5 5" stroke="#475569" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
       </div>
     </div>
 
-    <!-- Device identity note -->
     <div class="identity-note">
       <svg width="13" height="13" viewBox="0 0 13 13" style="flex-shrink:0;margin-top:1px">
         <circle cx="6.5" cy="6.5" r="5" stroke="#60A5FA" stroke-width="1" />
@@ -150,8 +138,7 @@
         <circle cx="6.5" cy="4.2" r=".6" fill="#60A5FA" />
       </svg>
       <p class="identity-text">
-        Identity saved to this device. No account needed.
-        Uninstalling removes your history.
+        Identity saved to this device. No account needed. Uninstalling removes your history.
       </p>
     </div>
 

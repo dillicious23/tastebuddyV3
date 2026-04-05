@@ -18,15 +18,29 @@ export class ProfileComponent {
   private router = inject(Router);
   readonly state = inject(AppStateService);
 
-  readonly avatars = ['🍔', '🍕', '🌮', '🍣', '🥗', '🍦', '🍩', '🥑', '🥞', '🥐'];
-  userAvatar = signal(localStorage.getItem('userAvatar') || this.avatars[Math.floor(Math.random() * this.avatars.length)]);
+  readonly allAvatars = [
+    '🦦', '🐻', '🦊', '🐼', '🐨', '🐯', '🦁', '🐸',
+    '🍔', '🍕', '🌮', '🍣', '🥗', '🍦', '🍩', '🥑', '🥞', '🥐',
+    '🌶️', '🍜', '🥩', '🍱', '🫕', '🥟',
+  ];
+
+  userAvatar = signal<string>(localStorage.getItem('userAvatar') || '🦦');
+  showAvatarPicker = signal(false);
 
   editing = signal(false);
   editedName = signal('');
-  locationOn = signal(true);
   notificationsOn = signal(true);
 
   readonly suggestions = USERNAME_SUGGESTIONS;
+
+  openAvatarPicker(): void { this.showAvatarPicker.set(true); }
+  closeAvatarPicker(): void { this.showAvatarPicker.set(false); }
+
+  selectAvatar(avatar: string): void {
+    this.userAvatar.set(avatar);
+    localStorage.setItem('userAvatar', avatar);
+    this.showAvatarPicker.set(false);
+  }
 
   startEdit(): void {
     this.editedName.set(this.state.username());
@@ -58,5 +72,12 @@ export class ProfileComponent {
 
   get radiusLabel(): string {
     return `${this.state.searchRadius()} miles`;
+  }
+
+  get cuisineLabel(): string {
+    const cuisines = this.state.selectedCuisines();
+    if (!cuisines || cuisines.length === 0 || cuisines.includes('all')) return 'All';
+    if (cuisines.length === 1) return cuisines[0].charAt(0).toUpperCase() + cuisines[0].slice(1);
+    return `${cuisines.length} selected`;
   }
 }

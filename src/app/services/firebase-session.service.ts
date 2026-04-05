@@ -45,7 +45,9 @@ export class FirebaseSessionService {
   private yelp = inject(YelpService);
 
   // ── Create a new room ────────────────────────────────────────
-  async createRoom(code: string, uid: string, username: string, lat: number, lng: number, radius: number): Promise<void> {
+  // Only the createRoom method changes — replace just this method in your file:
+
+  async createRoom(code: string, uid: string, username: string, lat: number, lng: number, radius: number, categories: string = ''): Promise<void> {
     const member: DbMember = {
       username,
       initial: username[0]?.toUpperCase() ?? 'U',
@@ -53,7 +55,8 @@ export class FirebaseSessionService {
       joinedAt: Date.now(),
     };
 
-    const liveRestaurants = await this.yelp.getRestaurants(lat, lng, radius);
+    // ✅ Pass categories to Yelp
+    const liveRestaurants = await this.yelp.getRestaurants(lat, lng, radius, categories);
 
     const restaurantMap: { [id: string]: Restaurant } = {};
     liveRestaurants.forEach(r => { restaurantMap[r.id] = r; });

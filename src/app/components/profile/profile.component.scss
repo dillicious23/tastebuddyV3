@@ -1,5 +1,3 @@
-// src/app/components/profile/profile.component.scss
-
 :host {
     display: block;
     height: 100%;
@@ -12,50 +10,151 @@
     background: var(--surface);
 }
 
-// ── Hero section ──────────────────────────────────────────────
-.hero {
-    padding: max(env(safe-area-inset-top), 12px) 18px 14px;
+// ── Avatar Picker ──────────────────────────────────────────────
+.avatar-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 150ms ease;
+}
+
+.avatar-picker-sheet {
+    width: 100%;
+    max-width: 480px;
+    background: #111827;
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px 32px;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.10);
+    animation: slideUp 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.picker-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--tx5);
+    margin-bottom: 14px;
     text-align: center;
+}
+
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.avatar-option {
+    aspect-ratio: 1;
+    border-radius: 14px;
+    background: var(--card-alt);
+    border: 1.5px solid transparent;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 120ms;
+
+    &.selected {
+        background: rgba(74, 222, 128, 0.12);
+        border-color: var(--green);
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.92);
+    }
+}
+
+.picker-close {
+    width: 100%;
+    height: 46px;
+    background: rgba(74, 222, 128, 0.10);
+    border: 0.5px solid rgba(74, 222, 128, 0.25);
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--green);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+// ── Hero ──────────────────────────────────────────────────────
+// ✅ flex column so avatar stacks above the name
+.hero {
+    padding: max(env(safe-area-inset-top), 12px) 18px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
 }
 
-// Avatar
 .avatar-wrap {
     position: relative;
     display: inline-block;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    cursor: pointer;
+
+    &:active .avatar-circle {
+        transform: scale(0.96);
+    }
 }
 
 .avatar-circle {
-    width: 70px;
-    height: 70px;
+    width: 76px;
+    height: 76px;
     border-radius: 50%;
     background: var(--blue-bg);
     border: 3px solid var(--blue);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 34px;
+    font-size: 36px;
     line-height: 1;
+    transition: transform 120ms;
 }
 
 .avatar-edit {
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: #1C2A3C;
+    background: #2D3748;
     border: 2px solid var(--surface);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
 }
 
-// Username
 .username-btn {
     display: inline-flex;
     align-items: center;
@@ -64,25 +163,25 @@
     border: none;
     cursor: pointer;
     font-family: inherit;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .username-text {
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 800;
-    letter-spacing: -0.2px;
+    letter-spacing: -0.3px;
     color: var(--tx1);
 }
 
 .username-hint {
     font-size: 10px;
     color: var(--tx7);
-    margin-bottom: 10px;
 }
 
 // Edit state
 .edit-row {
     margin-bottom: 8px;
+    width: 100%;
 }
 
 .edit-input-wrap {
@@ -92,7 +191,6 @@
     border: 1.5px solid var(--green);
     border-radius: 14px;
     padding: 10px 13px;
-    animation: codeBlink 1.8s ease-in-out infinite;
 }
 
 .edit-input {
@@ -124,6 +222,7 @@
     display: flex;
     gap: 7px;
     margin-bottom: 10px;
+    width: 100%;
 }
 
 .btn-save {
@@ -152,10 +251,9 @@
     font-family: inherit;
 }
 
-// Suggestions
 .suggestions-row {
     text-align: left;
-    margin-bottom: 10px;
+    width: 100%;
 }
 
 .chips-wrap {
@@ -191,58 +289,16 @@
     }
 }
 
-// Stats
-.stats-row {
-    display: flex;
-    gap: 8px;
-}
-
-.stat-box {
-    flex: 1;
-    background: var(--card-alt);
-    border-radius: 12px;
-    padding: 8px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-}
-
-.stat-val {
-    font-size: 19px;
-    font-weight: 900;
-
-    &.green {
-        color: var(--green);
-    }
-
-    &.purple {
-        color: var(--purple);
-    }
-
-    &.blue {
-        color: var(--blue);
-    }
-}
-
-.stat-label {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--tx7);
-}
-
-// ── Prefs scroll area ─────────────────────────────────────────
+// ── Prefs ─────────────────────────────────────────────────────
 .prefs-scroll {
     flex: 1;
     padding: 11px 12px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow-y: auto;
 }
 
-// ── Pref group ────────────────────────────────────────────────
 .pref-group {
     overflow: hidden;
 }
@@ -270,7 +326,19 @@
 
 .pref-value {
     font-size: 11px;
-    color: var(--tx3);
+    color: var(--tx4);
+    margin-right: 2px;
+}
+
+.chevron-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
 }
 
 .pref-divider {
@@ -279,7 +347,6 @@
     margin-left: 36px;
 }
 
-// ── Toggle ────────────────────────────────────────────────────
 .toggle-track {
     width: 38px;
     height: 22px;
@@ -312,7 +379,6 @@
     }
 }
 
-// ── Identity note ─────────────────────────────────────────────
 .identity-note {
     display: flex;
     gap: 7px;

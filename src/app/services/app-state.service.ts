@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { GroupMember, ForkupGroup, AppState, Restaurant, SessionMatch } from '../models/restaurant.model';
 import { generateRoomCode, RESTAURANTS } from '../data/mock-data';
 import { FirebaseSessionService, DbMember } from './firebase-session.service';
+import { toYelpCategories } from '../components/preferences/preferences.component';
 
 // ── Persistent device identity ──────────
 function getOrCreateUid(): string {
@@ -157,7 +158,10 @@ export class AppStateService {
   async startSession(lat: number = 33.4152, lng: number = -111.8315): Promise<string> {
     const code = generateRoomCode();
 
-    await this.fb.createRoom(code, this.myUid, this._state().username, lat, lng, this._state().searchRadius);
+    // ✅ Convert selected cuisines to Yelp category string
+    const yelpCategories = toYelpCategories(this.selectedCuisines());
+
+    await this.fb.createRoom(code, this.myUid, this._state().username, lat, lng, this._state().searchRadius, yelpCategories);
 
     this._state.update(s => ({
       ...s,
