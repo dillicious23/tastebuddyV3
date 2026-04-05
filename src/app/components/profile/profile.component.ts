@@ -18,6 +18,9 @@ export class ProfileComponent {
   private router = inject(Router);
   readonly state = inject(AppStateService);
 
+  readonly avatars = ['🍔', '🍕', '🌮', '🍣', '🥗', '🍦', '🍩', '🥑', '🥞', '🥐'];
+  userAvatar = signal(localStorage.getItem('userAvatar') || this.avatars[Math.floor(Math.random() * this.avatars.length)]);
+
   editing = signal(false);
   editedName = signal('');
   locationOn = signal(true);

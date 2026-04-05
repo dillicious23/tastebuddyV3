@@ -29,6 +29,10 @@ const BLANK_STATE: AppState = {
   username: getStoredUsername(), hasActiveSession: false, isWaiting: false, activeRoomCode: '', activeMembers: [], matchCount: 0, isSolo: true, searchRadius: 2, groups: loadGroups()
 };
 
+// ── Stats Persistence ──────────────────────────────────────────
+const SWIPES_KEY = 'tb_total_swipes';
+function getStoredSwipes(): number { return parseInt(localStorage.getItem(SWIPES_KEY) ?? '0'); }
+
 @Injectable({ providedIn: 'root' })
 export class AppStateService {
   private readonly fb = inject(FirebaseSessionService);
@@ -56,6 +60,33 @@ export class AppStateService {
 
   private _seenMatchIds = new Set<string>();
   private _roomSub: Subscription | null = null;
+
+  // 💥 NEW: Global Stats Tracking
+  readonly totalSwipes = signal<number>(getStoredSwipes());
+
+  // Derived stats from group history
+  readonly totalMatches = computed(() => {
+    return this.groups().reduce((acc, g) => acc + g.sessions.reduce((sAcc, s) => sAcc + s.matches.length, 0), 0);
+  });
+
+  readonly totalSessions = computed(() => {
+    return this.groups().reduce((acc, g) => acc + g.sessions.length, 0);
+  });
+
+  // 💥 NEW: Cuisine Filter State
+  readonly selectedCuisines = signal<string[]>(JSON.parse(localStorage.getItem('tb_cuisines') ?? '[]'));
+
+  // Call this from recordSwipe() to increment your global total
+  incrementSwipes(): void {
+    const newVal = this.totalSwipes() + 1;
+    this.totalSwipes.set(newVal);
+    localStorage.setItem(SWIPES_KEY, newVal.toString());
+  }
+
+  setCuisines(list: string[]): void {
+    this.selectedCuisines.set(list);
+    localStorage.setItem('tb_cuisines', JSON.stringify(list));
+  }
 
   listenToRoom(code: string): void {
     this._roomSub?.unsubscribe();
