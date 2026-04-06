@@ -103,6 +103,7 @@
             "karmaConfig": "karma.conf.js",
             "inlineStyleLanguage": "scss",
             "assets": [
+              "src/.well-known",
               {
                 "glob": "**/*",
                 "input": "src/assets",
