@@ -29,6 +29,7 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
+              "src/.well-known",
               {
                 "glob": "**/*",
                 "input": "src/assets",

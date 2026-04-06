@@ -3,14 +3,7 @@
     "public": "www",
     "ignore": [
       "firebase.json",
-      "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
     ],
     "headers": [
       {
@@ -21,6 +14,21 @@
             "value": "application/json"
           }
         ]
+      },
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ]
   }
