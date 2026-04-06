@@ -61,20 +61,19 @@
 
     <!-- Member slots -->
     <div class="wait-members">
-      <!-- Host (you) -->
       <div class="wait-member-slot">
-        <div class="avatar av-0" style="width:48px;height:48px;font-size:19px">
-          {{ members()[0]?.initial ?? 'H' }}
+        <div class="avatar av-0" style="width:48px;height:48px;font-size:26px">
+          {{ members()[0]?.avatar || members()[0]?.initial ?? 'H' }}
         </div>
         <span class="wait-member-name">You</span>
       </div>
-      <!-- Friends waiting slots -->
+
       <div class="wait-member-slot" *ngFor="let i of [1,2,3]">
         <div class="wait-empty-slot" [class.wait-slot-joined]="members()[i]">
           <ng-container *ngIf="members()[i]; else emptySlot">
             <div class="avatar" [ngClass]="'av-' + members()[i].colorIndex"
-              style="width:48px;height:48px;font-size:19px">
-              {{ members()[i].initial }}
+              style="width:48px;height:48px;font-size:26px">
+              {{ members()[i].avatar || members()[i].initial }}
             </div>
           </ng-container>
           <ng-template #emptySlot>
@@ -274,9 +273,12 @@
   <!-- ── Friend joined toast ───────────────────────────────────── -->
   <div class="toast-container" *ngIf="showToast()">
     <div class="toast-card">
-      <div class="avatar av-1" style="width:26px;height:26px;font-size:11px;border-color:var(--blue-bg)">J</div>
+      <div class="avatar av-1"
+        style="width:26px;height:26px;font-size:14px;border-color:var(--blue-bg); display:flex; align-items:center; justify-content:center;">
+        {{ members()[members().length - 1]?.avatar || members()[members().length - 1]?.initial || '👋' }}
+      </div>
       <div class="toast-body">
-        <span class="toast-title">Jamie joined</span>
+        <span class="toast-title">{{ members()[members().length - 1]?.username || 'Friend' }} joined</span>
         <span class="toast-sub">Solo mode off · match fires when you both agree</span>
       </div>
       <div class="pill pill-green" style="font-size:9px;padding:2px 7px">● {{ members().length }} online</div>

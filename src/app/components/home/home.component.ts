@@ -10,11 +10,12 @@ import { GoogleMapsModule, MapMarker, MapCircle } from '@angular/google-maps';
 import { YelpService } from '../../services/yelp.service';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, IonicModule, GoogleMapsModule, MapMarker, MapCircle],
+  imports: [CommonModule, IonicModule, GoogleMapsModule, MapMarker, MapCircle, FormsModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -35,6 +36,10 @@ export class HomeComponent {
   mapPulse = signal(0);
   private _rafId = 0;
   loadingLocation = signal(true);
+
+  get myAvatar(): string {
+    return localStorage.getItem('userAvatar') || '🦦';
+  }
 
   constructor() {
     this._animatePulse();
@@ -78,7 +83,6 @@ export class HomeComponent {
       clickable: false,     // Ensures the circle doesn't block clicks on the map itself
     };
   }
-
 
   refreshMap() {
     this.nearbyRestaurants = []; // Clear current pins
@@ -371,5 +375,50 @@ export class HomeComponent {
 
   goGroupDetail(id: string): void {
     this.router.navigate(['/tabs/groups', id]);
+  }
+
+  // 💥 NEW: Signal to track the city search
+  searchLocation = signal<string>('');
+
+  async performSearch() {
+    const city = this.searchLocation().trim();
+    if (!city) return;
+
+    this.loadingLocation.set(true);
+    this.nearbyRestaurants = []; // Clear current list
+
+    try {
+      const results = await this.yelp.getRestaurants(
+        null, null, // No GPS needed
+        this.state.searchRadius(),
+        this.state.selectedCuisines(),
+        city // Pass the city string here
+      );
+
+      this.fullRestaurantList = results;
+
+      // If we got results, center the map on the first restaurant found in that city
+      if (results.length > 0 && results[0].lat !== undefined && results[0].lng !== undefined) {
+        this.userLocation = { lat: results[0].lat, lng: results[0].lng };
+        this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+      }
+
+      this.state.lastRestaurants.set(results);
+      this.loadingLocation.set(false);
+
+      // Re-trigger the pin dropping animation
+      results.forEach((r, i) => setTimeout(() => this.nearbyRestaurants.push(r), i * 80));
+
+    } catch (error) {
+      console.error('City search failed', error);
+      this.loadingLocation.set(false);
+      alert('Could not find that location. Try a city name or zip code.');
+    }
+  }
+
+  // 💥 NEW: Clear search and go back to GPS
+  resetToCurrentLocation() {
+    this.searchLocation.set('');
+    this.getUserLocation();
   }
 }

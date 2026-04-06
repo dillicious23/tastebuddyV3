@@ -65,6 +65,8 @@
 // ── Username card ─────────────────────────────────────────────
 .username-card {
     width: 100%;
+    box-sizing: border-box;
+    /* 💥 FIX: Stops padding from making it wider than 100% */
     background: var(--card-alt);
     border: 0.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
@@ -76,7 +78,10 @@
 .name-row {
     display: flex;
     align-items: center;
-    gap: 9px;
+    width: 100%;
+    /* 💥 FIX: Constrain to card width */
+    gap: 12px;
+    /* Slightly wider gap for the larger avatar */
     margin-bottom: 10px;
 }
 
@@ -95,6 +100,8 @@
 
 .input-wrap {
     flex: 1;
+    min-width: 0;
+    /* 💥 FIX: Forces the flexbox to respect the screen edge! */
     display: flex;
     align-items: center;
     background: var(--card);
@@ -172,18 +179,62 @@
     line-height: 1.6;
 }
 
-.top-logo-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 10px;
-    /* Adjust spacing as needed */
+/* 💥 Custom App Logo Styling */
+.custom-app-logo {
+    width: 72px;
+    // height: 72px;
+    border-radius: 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
 }
 
-.custom-app-logo {
-    width: 60px;
-    /* Adjust size as needed */
-    height: auto;
-    /* Maintains aspect ratio */
-    border-radius: 12px;
-    /* Optional: Rounds the corners of the logo */
+/* 💥 Interactive Avatar Styling */
+.avatar-container {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+
+    &:active {
+        transform: scale(0.9);
+    }
+
+    /* Target your existing otter-avatar class */
+    .otter-avatar {
+        width: 64px;
+        height: 64px;
+        font-size: 32px;
+        /* (Leave the rest of your otter-avatar background/border as is!) */
+    }
+
+    /* The little edit pencil badge */
+    .edit-badge {
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        background: #3B82F6;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 3px solid #111827;
+        /* Matches the dark background */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
 }
+
+/* 💥 Bigger Text for the Input */
+//  .input-wrap {
+//      .huge-text {
+//          font-size: 20px;
+//          font-weight: 700;
+//          letter-spacing: -0.3px;
+
+//          &::placeholder {
+//              font-size: 18px;
+//              font-weight: 500;
+//          }
+//      }
+// }

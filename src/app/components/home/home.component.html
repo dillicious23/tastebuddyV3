@@ -27,19 +27,43 @@
   <!-- ── Top bar ──────────────────────────────────────────────── -->
   <div class="top-bar safe-top">
     <span class="logo-text">taste<span>buddy</span></span>
-    <div class="avatar-btn" (click)="goProfile()">{{ state.username()[0]?.toUpperCase() || '?' }}</div>
+    <div class="avatar-btn" (click)="goProfile()"
+      style="background: rgba(255,255,255,0.05); font-size: 20px; border: 1px solid rgba(255,255,255,0.1);">
+      {{ myAvatar }}
+    </div>
+  </div>
+
+  <div class="location-search-container"
+    style="position: absolute; top: max(env(safe-area-inset-top), 65px); left: 15px; right: 15px; z-index: 10;">
+    <div class="search-glass">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+
+      <input type="text" [(ngModel)]="searchLocation" (keyup.enter)="performSearch()"
+        placeholder="Search city or zip..." class="city-input" />
+
+      <button *ngIf="searchLocation()" (click)="resetToCurrentLocation()" class="clear-search-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <div *ngIf="state.isDataStale()"
-    style="position: absolute; top: max(env(safe-area-inset-top), 65px); left: 0; right: 0; display: flex; justify-content: center; z-index: 10;">
+    style="position: absolute; top: max(env(safe-area-inset-top), 125px); left: 0; right: 0; display: flex; justify-content: center; z-index: 10;">
 
     <button (click)="refreshMap()"
       style="background: rgba(11, 15, 26, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 9px 20px; border-radius: 30px; color: #FFFFFF; font-weight: 700; font-size: 13px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s;">
 
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
         stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.6 5.6"></path>
       </svg>
       Search this area
     </button>
@@ -60,8 +84,8 @@
         <div class="banner-meta">
           <div class="avatar-stack">
             <div *ngFor="let m of state.activeMembers()" class="avatar" [ngClass]="'av-' + m.colorIndex"
-              style="width:22px;height:22px;font-size:9px;border-color:#091808">
-              {{ m.initial }}
+              style="width:26px;height:26px;font-size:14px;border-color:#091808; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.1);">
+              {{ m.avatar || m.initial }}
             </div>
           </div>
           <span class="banner-names">{{ getMemberNames(state.activeMembers()) }}</span>
@@ -84,8 +108,8 @@
           <div *ngFor="let g of recentGroups" class="group-row" (click)="openSwipeAgain(g)">
             <div class="avatar-stack">
               <div *ngFor="let m of g.members.slice(0,3)" class="avatar" [ngClass]="'av-' + m.colorIndex"
-                style="width:24px;height:24px;font-size:10px">
-                {{ m.initial }}
+                style="width:26px;height:26px;font-size:14px; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.1);">
+                {{ m.avatar || m.initial }}
               </div>
             </div>
             <div class="group-info">

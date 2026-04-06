@@ -16,26 +16,31 @@ import { RANDOM_USERNAMES } from '../../utils/usernames';
   <div class="glow"></div>
 
   <div class="content">
-    <span class="fork-icon">🍽️</span>
+    <img src="assets/icon2.png" alt="Tastebuddy Logo" class="custom-app-logo" />
+    
     <div class="logo-text">taste<span>buddy</span></div>
     <p class="tagline">Decide where to eat. Together.</p>
 
-    <!-- Username card -->
     <div class="username-card">
-      <p class="label-caps" style="margin-bottom:8px">Your username</p>
+      <p class="label-caps" style="margin-bottom:8px">Your Profile</p>
 
       <div class="name-row">
-        <div class="otter-avatar">🦦</div>
+        <div class="avatar-container" (click)="cycleAvatar()">
+          <div class="otter-avatar">{{ userAvatar() }}</div>
+          <div class="edit-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          </div>
+        </div>
 
-        <!-- Active input — blinking border shows it's ready to type -->
         <div class="input-wrap" [class.focused]="focused()">
           <input #nameInput
-                 class="name-input"
+                 class="name-input huge-text"
                  type="text"
                  [(ngModel)]="username"
                  (ngModelChange)="username = $event"
                  (focus)="focused.set(true)"
                  (blur)="focused.set(false)"
+                 placeholder="Your Name"
                  maxlength="20"/>
           <span class="cursor" *ngIf="focused()"></span>
         </div>
@@ -43,16 +48,19 @@ import { RANDOM_USERNAMES } from '../../utils/usernames';
 
       <p class="label-caps" style="margin:10px 0 6px">Or pick one</p>
       <div class="chips">
-        <button *ngFor="let s of suggestions"
+        <button *ngFor="let s of displaySuggestions()"
                 class="chip"
                 [class.active]="username === s"
                 (click)="pick(s)">{{ s }}</button>
+                
         <button class="chip chip-shuffle" (click)="shuffle()">
-          <svg width="9" height="9" viewBox="0 0 9 9">
-            <path d="M7.5 4.5A3 3 0 1 1 4.5 1.5M4.5 1.5V0M4.5 1.5L3 3M4.5 1.5L6 3"
-                  stroke="#4ADE80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 3 21 3 21 8"></polyline>
+            <line x1="4" y1="20" x2="21" y2="3"></line>
+            <polyline points="21 16 21 21 16 21"></polyline>
+            <line x1="15" y1="15" x2="21" y2="21"></line>
+            <line x1="4" y1="4" x2="9" y2="9"></line>
           </svg>
-          Shuffle
         </button>
       </div>
     </div>
@@ -65,32 +73,61 @@ import { RANDOM_USERNAMES } from '../../utils/usernames';
   `,
   styleUrls: ['./launch.component.scss'],
 })
-export class LaunchComponent {
+export class LaunchComponent implements OnInit {
   private router = inject(Router);
   private stateService = inject(AppStateService);
 
-  // Pre-populate from localStorage if returning user
+  // 💥 NEW: Exact same list from your Profile component
+  readonly allAvatars = [
+    '🦦', '🐻', '🦊', '🐼', '🐨', '🐯', '🦁', '🐸',
+    '🍔', '🍕', '🌮', '🍣', '🥗', '🍦', '🍩', '🥑', '🥞', '🥐',
+    '🌶️', '🍜', '🥩', '🍱', '🫕', '🥟',
+  ];
+
+  userAvatar = signal<string>(this.allAvatars[0]);
   username = localStorage.getItem('tb_username') || '';
   focused = signal(false);
-  suggestions = USERNAME_SUGGESTIONS;
+
+  // Holds the 3 randomly selected names currently showing in the chips
+  displaySuggestions = signal<string[]>([]);
 
   ngOnInit() {
-    // Skip if they have already completed this screen
     if (localStorage.getItem('tb_has_launched')) {
       this.router.navigate(['/tabs/home'], { replaceUrl: true });
     }
+    this.refreshSuggestions();
   }
 
-  pick(s: string): void { this.username = s; }
+  // 💥 NEW: Cycles through the avatar list on tap
+  cycleAvatar(): void {
+    const currentIdx = this.allAvatars.indexOf(this.userAvatar());
+    const nextIdx = (currentIdx + 1) % this.allAvatars.length;
+    this.userAvatar.set(this.allAvatars[nextIdx]);
+  }
+
+  // 💥 NEW: Grabs 3 completely random names from your 100+ list
+  refreshSuggestions(): void {
+    const shuffled = [...RANDOM_USERNAMES].sort(() => 0.5 - Math.random());
+    this.displaySuggestions.set(shuffled.slice(0, 3));
+  }
+
+  pick(s: string): void {
+    this.username = s;
+  }
+
   shuffle(): void {
-    const others = this.suggestions.filter(s => s !== this.username);
-    this.username = others[Math.floor(Math.random() * others.length)];
+    this.refreshSuggestions();
+    this.username = this.displaySuggestions()[0]; // Auto-select the first new one
   }
 
   proceed(): void {
-    const name = this.username.trim() || USERNAME_SUGGESTIONS[0];
+    const name = this.username.trim() || this.displaySuggestions()[0];
     this.stateService.setUsername(name);
+
+    // 💥 CRITICAL: Save the chosen avatar so ProfileComponent loads it later!
+    localStorage.setItem('userAvatar', this.userAvatar());
     localStorage.setItem('tb_has_launched', 'true');
+
     this.router.navigate(['/tabs/home'], { replaceUrl: true });
   }
 }

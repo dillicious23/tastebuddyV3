@@ -525,3 +525,51 @@
         }
     }
 }
+
+.location-search-container {
+    position: absolute;
+    z-index: 100;
+
+    .search-glass {
+        background: rgba(11, 15, 26, 0.85);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+        .search-icon {
+            color: var(--blue);
+            margin-right: 10px;
+        }
+
+        .city-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        .clear-search-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--tx4);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+    }
+}

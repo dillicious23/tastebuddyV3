@@ -2,16 +2,30 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Restaurant } from '../models/restaurant.model';
+import { Capacitor } from '@capacitor/core';
 
 @Injectable({ providedIn: 'root' })
 export class YelpService {
     private http = inject(HttpClient);
 
     // The cors-anywhere proxy prevents browser blocks during local testing.
-    private baseUrl = 'https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search';
+    // private baseUrl = 'https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search';
 
     // Your actual Yelp API Key
     private apiKey = 'BcGuIBO_29gP4DdK-1IHudB0S9CRw3WZUtwfxXCaMBOkGePM706cRTrUZVx6NWH-45LRox0LPhr1wb-e2SJOx2QjP4_2Id29SOmtlGaTsKxwnrxrpci9drKjCQ1pZXYx';
+
+    get baseUrl(): string {
+        const yelpDirectUrl = 'https://api.yelp.com/v3/businesses/search';
+
+        // If we are on a real iOS or Android device, talk to Yelp directly!
+        // (CapacitorHttp will automatically bypass the CORS block)
+        if (Capacitor.isNativePlatform()) {
+            return yelpDirectUrl;
+        }
+
+        // If we are testing on localhost in the browser, use the proxy
+        return `https://cors-anywhere.herokuapp.com/${yelpDirectUrl}`;
+    }
 
     private getVisuals(categories: any[]) {
         const cats = categories.map((c: any) => c.alias.toLowerCase()).join(' ');
@@ -43,7 +57,13 @@ export class YelpService {
     }
 
     // 💥 FIX 1: Accepts a string OR a string array
-    async getRestaurants(lat: number, lng: number, radiusMiles: number, cuisines?: string | string[]): Promise<Restaurant[]> {
+    async getRestaurants(
+        lat: number | null,
+        lng: number | null,
+        radiusMiles: number,
+        cuisines?: string | string[],
+        location?: string // NEW: Optional city/zip string
+    ): Promise<Restaurant[]> {
         const headers = new HttpHeaders({
             Authorization: `Bearer ${this.apiKey}`,
             accept: 'application/json'
@@ -53,17 +73,27 @@ export class YelpService {
 
         let searchQuery = 'restaurants';
         if (cuisines) {
-            // Handles both string and array inputs automatically
             searchQuery = Array.isArray(cuisines) ? cuisines.join(',') : cuisines;
             if (!searchQuery.trim()) searchQuery = 'restaurants';
         }
 
-        const url = `${this.baseUrl}?latitude=${lat}&longitude=${lng}&radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
+        // 💥 FIX: Build the URL based on coordinates OR location string
+        // let url = `${this.baseUrl}?radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
+        let url = `${this.baseUrl}?radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
+
+        if (location) {
+            url += `&location=${encodeURIComponent(location)}`;
+        } else {
+            url += `&latitude=${lat}&longitude=${lng}`;
+        }
 
         const response: any = await firstValueFrom(this.http.get(url, { headers }));
 
         const strictBusinesses = response.businesses.filter((b: any) => {
             if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
+
+            // 💥 FIX: If this is a city search (no GPS coordinates), accept Yelp's default radius boundaries!
+            if (lat === null || lng === null) return true;
 
             const exactMeters = this.getExactDistance(lat, lng, b.coordinates.latitude, b.coordinates.longitude);
             return exactMeters <= radiusMeters;

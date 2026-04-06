@@ -18,6 +18,7 @@ export interface DbMember {
   initial: string;
   colorIndex: 0 | 1 | 2 | 3;
   joinedAt: number;
+  avatar?: string; // 💥 NEW: Add this line!
 }
 
 export interface DbMatch {
@@ -53,6 +54,7 @@ export class FirebaseSessionService {
       initial: username[0]?.toUpperCase() ?? 'U',
       colorIndex: 0,
       joinedAt: Date.now(),
+      avatar: localStorage.getItem('userAvatar') || '🦦',
     };
 
     // ✅ Pass categories to Yelp
@@ -90,6 +92,7 @@ export class FirebaseSessionService {
       initial: username[0]?.toUpperCase() ?? 'U',
       colorIndex,
       joinedAt: Date.now(),
+      avatar: localStorage.getItem('userAvatar') || '🦦',
     };
 
     // Merge the new member into the members map
