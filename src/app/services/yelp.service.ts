@@ -79,7 +79,7 @@ export class YelpService {
 
         // 💥 FIX: Build the URL based on coordinates OR location string
         // let url = `${this.baseUrl}?radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
-        let url = `${this.baseUrl}?radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
+        let url = `${this.baseUrl}?radius=${radiusMeters}&limit=50&sort_by=distance&term=${encodeURIComponent(searchQuery)}`;
 
         if (location) {
             url += `&location=${encodeURIComponent(location)}`;
@@ -91,6 +91,9 @@ export class YelpService {
 
         const strictBusinesses = response.businesses.filter((b: any) => {
             if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
+
+            // 💥 NEW: Filter out anything under 2.5 stars!
+            if (!b.rating || b.rating < 2.5) return false;
 
             // 💥 FIX: If this is a city search (no GPS coordinates), accept Yelp's default radius boundaries!
             if (lat === null || lng === null) return true;
@@ -106,7 +109,9 @@ export class YelpService {
             return {
                 id: b.id,
                 name: b.name,
-                cuisine: b.categories && b.categories.length > 0 ? b.categories[0].title : 'Food',
+                cuisine: b.categories && b.categories.length > 0
+                    ? b.categories.map((c: any) => c.title).join(', ')
+                    : 'Food',
                 dist: (b.distance / 1609.34).toFixed(1) + ' mi',
                 price: b.price || '$$',
                 rating: b.rating,

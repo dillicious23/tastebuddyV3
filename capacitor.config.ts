@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'tastebuddyV2',
+  appId: 'com.tastebuddy.app',
+  appName: 'tastebuddy',
   webDir: 'www',
   plugins: {
     SplashScreen: {

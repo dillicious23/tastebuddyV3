@@ -11,6 +11,7 @@ import { YelpService } from '../../services/yelp.service';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { FormsModule } from '@angular/forms';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 @Component({
   selector: 'app-home',
@@ -93,7 +94,9 @@ export class HomeComponent {
   // 1. Map Yelp's dynamic cuisine text to your preferred emojis
   getEmojiForCuisine(cuisine: string): string {
     const c = cuisine.toLowerCase();
-    if (c.includes('mexican') || c.includes('taco')) return '🌮';
+
+    // 💥 FIX: Added burrito and a few others to be safe!
+    if (c.includes('mexican') || c.includes('taco') || c.includes('burrito')) return '🌮';
     if (c.includes('burger') || c.includes('american') || c.includes('fast food')) return '🍔';
     if (c.includes('pizza') || c.includes('italian')) return '🍕';
     if (c.includes('sushi') || c.includes('japanese') || c.includes('seafood')) return '🍣';
@@ -101,6 +104,7 @@ export class HomeComponent {
     if (c.includes('coffee') || c.includes('cafe') || c.includes('tea')) return '☕';
     if (c.includes('breakfast') || c.includes('brunch')) return '🥞';
     if (c.includes('dessert') || c.includes('ice cream') || c.includes('bakery')) return '🍦';
+
     return '🍽️'; // Default fallback
   }
 
@@ -214,8 +218,11 @@ export class HomeComponent {
             this.state.lastRestaurants.set(this.fullRestaurantList);
 
             this.fullRestaurantList.forEach((restaurant, index) => {
-              setTimeout(() => {
+              setTimeout(async () => {
                 this.nearbyRestaurants.push(restaurant);
+                if (Capacitor.isNativePlatform()) {
+                  await Haptics.impact({ style: ImpactStyle.Light });
+                }
               }, index * 80);
             });
 
@@ -407,7 +414,14 @@ export class HomeComponent {
       this.loadingLocation.set(false);
 
       // Re-trigger the pin dropping animation
-      results.forEach((r, i) => setTimeout(() => this.nearbyRestaurants.push(r), i * 80));
+      results.forEach((r, i) => setTimeout(async () => {
+        this.nearbyRestaurants.push(r);
+
+        // 💥 NEW: Trigger a light haptic "tick" on the phone
+        if (Capacitor.isNativePlatform()) {
+          await Haptics.impact({ style: ImpactStyle.Light });
+        }
+      }, i * 80));
 
     } catch (error) {
       console.error('City search failed', error);

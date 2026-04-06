@@ -21,7 +21,10 @@ import { Restaurant } from '../../models/restaurant.model';
 
   <div class="match-content safe-top">
     <p class="match-label">Everyone agreed!</p>
-    <div class="match-emoji">{{ match()?.emoji }}</div>
+    <div class="match-image-container" [style.background]="match()?.bg || 'transparent'">
+      <img *ngIf="match()?.imageUrl" [src]="match()?.imageUrl" class="match-photo" alt="Restaurant Photo" />
+      <span *ngIf="!match()?.imageUrl" class="match-emoji-fallback">{{ match()?.emoji }}</span>
+    </div>
 
     <div class="match-card">
       <h2 class="match-name">{{ match()?.name }}</h2>
@@ -30,8 +33,8 @@ import { Restaurant } from '../../models/restaurant.model';
         <div class="avatar-stack">
           <div *ngFor="let m of members()"
                class="avatar" [ngClass]="'av-' + m.colorIndex"
-               style="width:27px;height:27px;font-size:11px;border-color:#050E06">
-            {{ m.initial }}
+               style="width:27px;height:27px;font-size:16px;border-color:#050E06;display:flex;align-items:center;justify-content:center;">
+            {{ m.avatar || m.initial }}
           </div>
         </div>
         <span class="match-names">{{ memberNames() }}</span>
@@ -62,7 +65,32 @@ import { Restaurant } from '../../models/restaurant.model';
     .cf { position:absolute;width:7px;height:7px;animation:cfFall 3s ease-in infinite; }
     .match-content { position:relative;z-index:10;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 22px;text-align:center; }
     .match-label { font-size:10px;font-weight:700;color:#4ADE80;text-transform:uppercase;letter-spacing:.22em;margin-bottom:13px;animation:matchPop .5s ease-out both; }
-    .match-emoji { font-size:96px;line-height:1;margin-bottom:14px;filter:drop-shadow(0 0 28px rgba(74,222,128,.32));animation:matchPop .45s cubic-bezier(.22,1.4,.36,1) .1s both; }
+/* 💥 NEW: Match Image Styles */
+    .match-image-container { 
+      width: 130px; 
+      height: 130px; 
+      border-radius: 50%; 
+      margin-bottom: 18px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      position: relative; 
+      overflow: hidden; 
+      box-shadow: 0 0 36px rgba(74,222,128,.4); 
+      border: 3px solid rgba(74,222,128,.5);
+      animation: matchPop .45s cubic-bezier(.22,1.4,.36,1) .1s both; 
+    }
+    .match-photo { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+    }
+    .match-emoji-fallback { 
+      font-size: 72px; 
+      line-height: 1; 
+      position: relative; 
+      z-index: 2; 
+    }    
     .match-card { width:100%;background:rgba(255,255,255,.05);backdrop-filter:blur(12px);border:.5px solid rgba(74,222,128,.28);border-radius:22px;padding:15px 18px;margin-bottom:14px;animation:matchPop .5s cubic-bezier(.22,1.4,.36,1) .18s both; }
     .match-name { font-size:21px;font-weight:900;letter-spacing:-.4px;color:#F1F5F9;margin-bottom:3px; }
     .match-sub  { font-size:11px;color:#475569;margin-bottom:12px; }
@@ -106,7 +134,8 @@ export class MatchComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     const m = this.match();
     if (m?.name) {
-      window.open(`https://maps.google.com/?q=${encodeURIComponent(m.name)}`, '_blank');
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.name)}`;
+      window.open(mapsUrl, '_blank');
     }
   }
 
