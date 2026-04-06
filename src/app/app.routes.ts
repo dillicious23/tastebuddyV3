@@ -58,7 +58,14 @@ export const routes: Routes = [
     ],
   },
   {
+    // For when a user manually taps "Join" from the home screen
     path: 'join',
+    loadComponent: () =>
+      import('./components/join/join.component').then(m => m.JoinComponent),
+  },
+  {
+    // 💥 NEW: For when a user clicks a Universal Link with a room code (e.g., /join/RSHE)
+    path: 'join/:code',
     loadComponent: () =>
       import('./components/join/join.component').then(m => m.JoinComponent),
   },

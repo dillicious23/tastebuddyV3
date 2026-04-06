@@ -200,7 +200,7 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
   async shareCode(): Promise<void> {
     const code = this.state.activeRoomCode();
-    const inviteLink = `https://tastebuddy.app/join/${code}`;
+    const inviteLink = `https://tastebuddyv2.web.app/join/${code}`;
 
     try {
       // Check if the device natively supports sharing

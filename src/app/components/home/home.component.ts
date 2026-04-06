@@ -354,10 +354,11 @@ export class HomeComponent {
 
   async shareCode() {
     const code = this.state.activeRoomCode();
-    const inviteLink = `https://tastebuddy.app/join/${code}`;
+
+    // 💥 CHANGED: Point to your Firebase Web App domain
+    const inviteLink = `https://tastebuddyv2.web.app/join/${code}`;
 
     try {
-      // 💥 1. Check if we are running on a real phone (iOS/Android)
       if (Capacitor.isNativePlatform()) {
         await Share.share({
           title: 'Join my Tastebuddy room!',

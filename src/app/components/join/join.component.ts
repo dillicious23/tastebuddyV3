@@ -1,8 +1,8 @@
 // src/app/components/join/join.component.ts
-import { Component, signal, inject, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, signal, inject, ViewChild, ElementRef, AfterViewInit, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { Clipboard } from '@capacitor/clipboard';
@@ -14,8 +14,9 @@ import { Clipboard } from '@capacitor/clipboard';
   templateUrl: './join.component.html',
   styleUrls: ['./join.component.scss'],
 })
-export class JoinComponent implements AfterViewInit {
+export class JoinComponent implements AfterViewInit, OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private state = inject(AppStateService);
 
   @ViewChild('codeInput') codeInputRef!: ElementRef<HTMLInputElement>;
@@ -25,8 +26,27 @@ export class JoinComponent implements AfterViewInit {
   error = signal(false);
 
   ngAfterViewInit(): void {
-    // Auto-focus the input so the keyboard opens immediately
-    setTimeout(() => this.codeInputRef?.nativeElement.focus(), 150);
+    // 💥 UPDATED: Only auto-pop the keyboard if they didn't just auto-fill from a link
+    if (this.code().length < 4) {
+      setTimeout(() => this.codeInputRef?.nativeElement.focus(), 150);
+    }
+  }
+
+  ngOnInit() {
+    // Look at the URL and see if there is a 'code' parameter (e.g., /join/RSHE)
+    const urlCode = this.route.snapshot.paramMap.get('code');
+
+    if (urlCode) {
+      // Clean it up just in case there are weird characters
+      const cleanCode = urlCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      this.code.set(cleanCode);
+
+      // If we got a full 4-character code from the link, auto-submit!
+      if (cleanCode.length === 4) {
+        // A tiny 100ms delay lets the screen finish animating in before triggering the loading spinner
+        setTimeout(() => this.submit(), 100);
+      }
+    }
   }
 
   // Derive display chars from the code string
