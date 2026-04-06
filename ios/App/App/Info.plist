@@ -47,5 +47,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+<string>Tastebuddy needs your location to find the best restaurants and matches near you.</string>
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>Tastebuddy needs your location to help you and your friends find the perfect spot to eat nearby.</string>
 </dict>
 </plist>
