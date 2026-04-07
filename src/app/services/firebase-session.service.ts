@@ -63,11 +63,16 @@ export class FirebaseSessionService {
     const restaurantMap: { [id: string]: Restaurant } = {};
     liveRestaurants.forEach(r => { restaurantMap[r.id] = r; });
 
+    // 💥 NEW: Calculate exactly 24 hours from right now
+    const expirationDate = new Date();
+    expirationDate.setHours(expirationDate.getHours() + 24);
+
     const roomRef = doc(db, 'rooms', code);
     await setDoc(roomRef, {
       hostId: uid,
       status: 'waiting',
       createdAt: Date.now(),
+      expiresAt: expirationDate, // 💥 NEW: Tell Firestore exactly when this expires
       members: { [uid]: member },
       matches: {},
       restaurants: restaurantMap,
