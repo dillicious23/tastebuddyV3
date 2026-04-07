@@ -14,6 +14,9 @@ const CUISINE_OPTIONS = [
   { id: 'japanese', label: 'Japanese', emoji: '🍣', yelpAlias: 'japanese,sushi' },
   { id: 'healthy', label: 'Healthy', emoji: '🥗', yelpAlias: 'salad,vegetarian,vegan' },
   { id: 'indian', label: 'Indian', emoji: '🍛', yelpAlias: 'indpak' },
+  { id: 'coffee', label: 'Coffee & Tea', emoji: '☕' },
+  { id: 'desserts', label: 'Desserts', emoji: '🍩' },
+  { id: 'bakeries', label: 'Bakeries', emoji: '🥐' },
 ];
 
 // Export so YelpService can use it

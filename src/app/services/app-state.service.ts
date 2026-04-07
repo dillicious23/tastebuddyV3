@@ -62,13 +62,17 @@ export class AppStateService {
   readonly isDataStale = computed(() => {
     const currentRadius = this.searchRadius();
     const currentCuisines = this.selectedCuisines().join(',');
+    const currentOpenNow = this.openNow();
+    const currentPrice = this.priceFilter().join(',');
+
     const oldRadius = this.lastFetchRadius();
     const oldCuisines = this.lastFetchCuisines().join(',');
+    const oldOpenNow = this.lastFetchOpenNow();
+    const oldPrice = this.lastFetchPrice();
 
-    // If we haven't fetched yet (0), it's not stale, it's just empty
     if (oldRadius === 0) return false;
 
-    return currentRadius !== oldRadius || currentCuisines !== oldCuisines;
+    return currentRadius !== oldRadius || currentCuisines !== oldCuisines || currentOpenNow !== oldOpenNow || currentPrice !== oldPrice;
   });
 
   // NEW: Live signals for the results screen
@@ -92,6 +96,22 @@ export class AppStateService {
 
   // 💥 NEW: Cuisine Filter State
   readonly selectedCuisines = signal<string[]>(JSON.parse(localStorage.getItem('tb_cuisines') ?? '[]'));
+  readonly openNow = signal<boolean>(localStorage.getItem('tb_openNow') === 'true');
+  readonly priceFilter = signal<string[]>(JSON.parse(localStorage.getItem('tb_price') ?? '["1","2","3","4"]'));
+
+  readonly lastFetchOpenNow = signal<boolean>(false);
+  readonly lastFetchPrice = signal<string>('');
+
+  setOpenNow(val: boolean): void {
+    this.openNow.set(val);
+    localStorage.setItem('tb_openNow', String(val));
+  }
+
+  setPriceFilter(list: string[]): void {
+    this.priceFilter.set(list);
+    localStorage.setItem('tb_price', JSON.stringify(list));
+  }
+
 
   // Call this from recordSwipe() to increment your global total
   incrementSwipes(): void {
@@ -175,7 +195,17 @@ export class AppStateService {
     // 💥 Use the passed code if it exists, otherwise generate a new one
     const code = existingCode || generateRoomCode();
 
-    await this.fb.createRoom(code, this.myUid, this._state().username, lat, lng, this._state().searchRadius);
+    await this.fb.createRoom(
+      code,
+      this.myUid,
+      this._state().username,
+      lat,
+      lng,
+      this._state().searchRadius,
+      this.selectedCuisines().join(','),
+      this.openNow(),
+      this.priceFilter()
+    );
 
     this._state.update(s => ({
       ...s,

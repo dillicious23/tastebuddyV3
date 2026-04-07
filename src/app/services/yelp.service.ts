@@ -62,7 +62,9 @@ export class YelpService {
         lng: number | null,
         radiusMiles: number,
         cuisines?: string | string[],
-        location?: string // NEW: Optional city/zip string
+        openNow: boolean = false,            // 💥 NEW
+        price: string[] = ['1', '2', '3', '4'], // 💥 NEW
+        location?: string
     ): Promise<Restaurant[]> {
         const headers = new HttpHeaders({
             Authorization: `Bearer ${this.apiKey}`,
@@ -71,15 +73,30 @@ export class YelpService {
 
         const radiusMeters = Math.min(Math.floor(radiusMiles * 1609.34), 40000);
 
-        let searchQuery = 'restaurants';
-        if (cuisines) {
-            searchQuery = Array.isArray(cuisines) ? cuisines.join(',') : cuisines;
-            if (!searchQuery.trim()) searchQuery = 'restaurants';
+        // 💥 FIX: Build the correct categories string
+        let catQuery = '';
+        if (cuisines && cuisines.length > 0 && !cuisines.includes('all')) {
+            catQuery = Array.isArray(cuisines) ? cuisines.join(',') : cuisines;
         }
 
-        // 💥 FIX: Build the URL based on coordinates OR location string
-        // let url = `${this.baseUrl}?radius=${radiusMeters}&limit=35&term=${encodeURIComponent(searchQuery)}`;
-        let url = `${this.baseUrl}?radius=${radiusMeters}&limit=50&sort_by=distance&term=${encodeURIComponent(searchQuery)}`;
+        let url = `${this.baseUrl}?radius=${radiusMeters}&limit=50&sort_by=distance`;
+
+        // 💥 FIX: Use 'categories' instead of 'term'
+        if (catQuery) {
+            url += `&categories=${encodeURIComponent(catQuery)}`;
+        } else {
+            url += `&categories=restaurants`; // Fallback so we don't get dentists
+        }
+
+        // 💥 NEW: Append Open Now
+        if (openNow) {
+            url += `&open_now=true`;
+        }
+
+        // 💥 NEW: Append Price
+        if (price && price.length > 0) {
+            url += `&price=${price.join(',')}`;
+        }
 
         if (location) {
             url += `&location=${encodeURIComponent(location)}`;

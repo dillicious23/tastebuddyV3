@@ -36,6 +36,17 @@ export class ProfileComponent {
   openAvatarPicker(): void { this.showAvatarPicker.set(true); }
   closeAvatarPicker(): void { this.showAvatarPicker.set(false); }
 
+  togglePrice(tier: string): void {
+    const current = [...this.state.priceFilter()];
+    const idx = current.indexOf(tier);
+    if (idx > -1) {
+      if (current.length > 1) current.splice(idx, 1);
+    } else {
+      current.push(tier);
+    }
+    this.state.setPriceFilter(current.sort());
+  }
+
   selectAvatar(avatar: string): void {
     this.userAvatar.set(avatar);
     localStorage.setItem('userAvatar', avatar);

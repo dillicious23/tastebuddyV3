@@ -2,6 +2,7 @@ import { Component, OnInit, NgZone } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { Geolocation } from '@capacitor/geolocation';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-root',
@@ -50,8 +51,13 @@ export class AppComponent implements OnInit {
 
   async requestLocationPermissions() {
     try {
-      const status = await Geolocation.requestPermissions();
-      console.log('Location permission status:', status.location);
+      // 💥 NEW: Only request permissions manually if running on a phone
+      if (Capacitor.isNativePlatform()) {
+        const status = await Geolocation.requestPermissions();
+        console.log('Location permission status:', status.location);
+      } else {
+        console.log('Running on web: Permission will be requested automatically when needed.');
+      }
     } catch (err) {
       console.error('Error requesting location permissions:', err);
     }

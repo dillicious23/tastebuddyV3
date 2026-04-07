@@ -48,7 +48,7 @@ export class FirebaseSessionService {
   // ── Create a new room ────────────────────────────────────────
   // Only the createRoom method changes — replace just this method in your file:
 
-  async createRoom(code: string, uid: string, username: string, lat: number, lng: number, radius: number, categories: string = ''): Promise<void> {
+  async createRoom(code: string, uid: string, username: string, lat: number, lng: number, radius: number, categories: string = '', openNow: boolean = false, price: string[] = ['1', '2', '3', '4']): Promise<void> {
     const member: DbMember = {
       username,
       initial: username[0]?.toUpperCase() ?? 'U',
@@ -58,7 +58,7 @@ export class FirebaseSessionService {
     };
 
     // ✅ Pass categories to Yelp
-    const liveRestaurants = await this.yelp.getRestaurants(lat, lng, radius, categories);
+    const liveRestaurants = await this.yelp.getRestaurants(lat, lng, radius, categories, openNow, price);
 
     const restaurantMap: { [id: string]: Restaurant } = {};
     liveRestaurants.forEach(r => { restaurantMap[r.id] = r; });

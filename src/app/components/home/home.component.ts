@@ -88,7 +88,13 @@ export class HomeComponent {
   refreshMap() {
     this.nearbyRestaurants = []; // Clear current pins
     this.loadingLocation.set(true);
-    this.getUserLocation();
+
+    // 💥 FIX: If there is a city in the search bar, refresh that city. Otherwise, use GPS.
+    if (this.searchLocation().trim() !== '') {
+      this.performSearch();
+    } else {
+      this.getUserLocation();
+    }
   }
 
   // 1. Map Yelp's dynamic cuisine text to your preferred emojis
@@ -166,18 +172,26 @@ export class HomeComponent {
     ]
   };
 
-  ngOnInit(): void {
-    // 💥 FIX: Check if we already have the map data saved
+  // 💥 NEW: Ionic lifecycle hook. Runs EVERY time this tab appears on screen.
+  ionViewWillEnter(): void {
     const savedLoc = this.state.lastLocation();
     const savedRest = this.state.lastRestaurants();
 
     if (savedLoc && savedRest.length > 0) {
-      // Instantly restore the map without fetching or animations
-      this.userLocation = savedLoc;
-      this.mapOptions = { ...this.mapOptions, center: this.userLocation };
-      this.fullRestaurantList = savedRest;
-      this.nearbyRestaurants = savedRest; // Load all at once, no drop delay
-      this.loadingLocation.set(false);
+
+      // Check if the user just changed filters on the profile page
+      if (this.state.isDataStale()) {
+        console.log('Filters changed! Auto-refreshing map...');
+        this.refreshMap(); // This clears the old pins and fetches fresh data!
+      } else {
+        // Data is still fresh. Instantly restore the map.
+        this.userLocation = savedLoc;
+        this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+        this.fullRestaurantList = savedRest;
+        this.nearbyRestaurants = savedRest;
+        this.loadingLocation.set(false);
+      }
+
     } else {
       // First time loading the app, do the full fetch and animation
       this.getUserLocation();
@@ -206,13 +220,17 @@ export class HomeComponent {
             this.fullRestaurantList = await this.yelp.getRestaurants(
               this.userLocation.lat,
               this.userLocation.lng,
-              this.state.searchRadius()
-              // (Make sure your Yelp service is also passing state.selectedCuisines() here!)
+              this.state.searchRadius(),
+              this.state.selectedCuisines(),
+              this.state.openNow(),     // 💥 NEW: Send Open Now
+              this.state.priceFilter()  // 💥 NEW: Send Price
             );
 
-            // 💥 FIX: Log the parameters we just used so the "Stale" detector resets to false
+            // 💥 FIX: Log all parameters so the "Stale" detector resets
             this.state.lastFetchRadius.set(this.state.searchRadius());
             this.state.lastFetchCuisines.set(this.state.selectedCuisines());
+            this.state.lastFetchOpenNow.set(this.state.openNow());
+            this.state.lastFetchPrice.set(this.state.priceFilter().join(','));
 
             this.state.lastLocation.set(this.userLocation);
             this.state.lastRestaurants.set(this.fullRestaurantList);
@@ -400,10 +418,18 @@ export class HomeComponent {
         null, null, // No GPS needed
         this.state.searchRadius(),
         this.state.selectedCuisines(),
+        this.state.openNow(),
+        this.state.priceFilter(),
         city // Pass the city string here
       );
 
       this.fullRestaurantList = results;
+
+      // 💥 FIX: Log the parameters we just used so the "Stale Data" loop stops!
+      this.state.lastFetchRadius.set(this.state.searchRadius());
+      this.state.lastFetchCuisines.set(this.state.selectedCuisines());
+      this.state.lastFetchOpenNow.set(this.state.openNow());
+      this.state.lastFetchPrice.set(this.state.priceFilter().join(','));
 
       // If we got results, center the map on the first restaurant found in that city
       if (results.length > 0 && results[0].lat !== undefined && results[0].lng !== undefined) {
@@ -418,7 +444,6 @@ export class HomeComponent {
       results.forEach((r, i) => setTimeout(async () => {
         this.nearbyRestaurants.push(r);
 
-        // 💥 NEW: Trigger a light haptic "tick" on the phone
         if (Capacitor.isNativePlatform()) {
           await Haptics.impact({ style: ImpactStyle.Light });
         }

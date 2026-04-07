@@ -80,27 +80,11 @@
 
     <div class="pref-group ghost-card br-md">
 
-      <!-- Notifications toggle -->
-      <!-- <div class="pref-row">
-        <svg width="15" height="15" viewBox="0 0 15 15">
-          <path d="M7.5 1C5.8 1 4.5 2.6 4.5 4.4V7.4L3.8 9H11.2L10.5 7.4V4.4C10.5 2.6 9.2 1 7.5 1Z" stroke="#A78BFA"
-            stroke-width="1.1" />
-          <path d="M6.3 9.8C6.5 10.5 7 11 7.5 11S8.5 10.5 8.7 9.8" stroke="#A78BFA" stroke-width="1.1"
-            stroke-linecap="round" />
-        </svg>
-        <span class="pref-label">Notifications</span>
-        <div class="toggle-track" [class.off]="!notificationsOn()" (click)="notificationsOn.set(!notificationsOn())">
-          <div class="toggle-thumb"></div>
-        </div>
-      </div>
-
-      <div class="pref-divider"></div> -->
-
-      <!-- Search radius -->
-      <div class="pref-row pref-link" (click)="goPreferences('radius')">
-        <svg width="15" height="15" viewBox="0 0 15 15">
-          <circle cx="7.5" cy="7.5" r="5.5" stroke="#64748B" stroke-width="1.1" />
-          <path d="M7.5 4.5V7.5L9.5 9.5" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
+      <div class="pref-row pref-link" (click)="goPreferences('radius')" style="gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
         </svg>
         <span class="pref-label">Search radius</span>
         <span class="pref-value">{{ radiusLabel }}</span>
@@ -113,13 +97,12 @@
 
       <div class="pref-divider"></div>
 
-      <!-- Cuisine filters — improved fork+knife icon -->
-      <div class="pref-row pref-link" (click)="goPreferences('cuisine')">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-          <path d="M4 2v3.5c0 1 .7 1.8 1.5 2V13" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
-          <path d="M5.5 2v2M4 4h3" stroke="#64748B" stroke-width="1.1" stroke-linecap="round" />
-          <path d="M10.5 2c0 0 1.5 1.5 1.5 3.5 0 1-.6 1.8-1.5 2V13" stroke="#64748B" stroke-width="1.1"
-            stroke-linecap="round" />
+      <div class="pref-row pref-link" (click)="goPreferences('cuisine')" style="gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+          <path d="M7 2v20"></path>
+          <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
         </svg>
         <span class="pref-label">Cuisine filters</span>
         <span class="pref-value">{{ cuisineLabel }}</span>
@@ -128,6 +111,42 @@
             <path d="M1 1l5 5-5 5" stroke="#475569" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </span>
+      </div>
+
+      <div class="pref-divider"></div>
+
+      <div class="pref-row" style="gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span class="pref-label">Open Now</span>
+        <div class="toggle-track" [class.off]="!state.openNow()" (click)="state.setOpenNow(!state.openNow())"
+          style="margin-left: auto;">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <div class="pref-divider"></div>
+
+      <div class="pref-row" style="flex-direction: column; align-items: flex-start; gap: 14px; padding: 14px 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          <span class="pref-label">Price</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; width: 100%;">
+          <button *ngFor="let p of ['1', '2', '3', '4']"
+            [style]="state.priceFilter().includes(p) ? 'flex: 1; padding: 8px; border-radius: 8px; background: rgba(96,165,250,0.15); border: 1px solid var(--blue); color: var(--blue); font-weight: 700; transition: 0.2s;' : 'flex: 1; padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--tx5); font-weight: 600; transition: 0.2s;'"
+            (click)="togglePrice(p)">
+            {{ p === '1' ? '$' : p === '2' ? '$$' : p === '3' ? '$$$' : '$$$$' }}
+          </button>
+        </div>
       </div>
     </div>
 

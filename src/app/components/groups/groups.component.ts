@@ -29,7 +29,7 @@ export class GroupsComponent {
   getLastMatch(group: ForkupGroup): SessionMatch | null {
     for (const s of group.sessions) {
       const full = s.matches.find(m => m.isFull);
-      if (full) return full;
+      if (full) return full; // Only returns the first one it finds
     }
     return null;
   }
