@@ -54,19 +54,23 @@ export class AppStateService {
   readonly lastLocation = signal<{ lat: number, lng: number } | null>(null);
   readonly lastRestaurants = signal<any[]>([]);
   readonly lastFetchRadius = signal<number>(0);
-  readonly lastFetchCuisines = signal<string[]>([]);
+  readonly lastFetchCuisines = signal<string>('');
 
   readonly deck = signal<Restaurant[]>([...RESTAURANTS]);
   readonly latestMatch = signal<Restaurant | null>(null);
 
   readonly isDataStale = computed(() => {
     const currentRadius = this.searchRadius();
-    const currentCuisines = this.selectedCuisines().join(',');
+
+    // 💥 FIX: Check the translated string!
+    const currentCuisines = this.yelpCategoryString();
     const currentOpenNow = this.openNow();
     const currentPrice = this.priceFilter().join(',');
 
     const oldRadius = this.lastFetchRadius();
-    const oldCuisines = this.lastFetchCuisines().join(',');
+
+    // 💥 FIX: This is now a simple string, no need to .join()
+    const oldCuisines = this.lastFetchCuisines();
     const oldOpenNow = this.lastFetchOpenNow();
     const oldPrice = this.lastFetchPrice();
 
@@ -74,6 +78,8 @@ export class AppStateService {
 
     return currentRadius !== oldRadius || currentCuisines !== oldCuisines || currentOpenNow !== oldOpenNow || currentPrice !== oldPrice;
   });
+
+  readonly yelpCategoryString = computed(() => toYelpCategories(this.selectedCuisines()));
 
   // NEW: Live signals for the results screen
   readonly liveMatches = signal<SessionMatch[]>([]);
@@ -202,7 +208,7 @@ export class AppStateService {
       lat,
       lng,
       this._state().searchRadius,
-      this.selectedCuisines().join(','),
+      this.yelpCategoryString(), // 💥 FIX: Send the actual aliases to Firebase
       this.openNow(),
       this.priceFilter()
     );

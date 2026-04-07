@@ -1,6 +1,4 @@
-// src/app/components/home/home.component.ts
-import { Component, inject, signal, computed, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, Output, EventEmitter, OnDestroy, OnInit } from '@angular/core'; import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
@@ -20,13 +18,12 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   readonly state = inject(AppStateService);
-
-  @Output() start = new EventEmitter<any[]>(); // <-- Update to emit the array
-
   private yelp = inject(YelpService);
+
+  @Output() start = new EventEmitter<any[]>();
 
   // UI state
   showEndDialog = signal(false);
@@ -37,18 +34,204 @@ export class HomeComponent {
   mapPulse = signal(0);
   private _rafId = 0;
   loadingLocation = signal(true);
+  searchLocation = signal<string>('');
 
-  get myAvatar(): string {
-    return localStorage.getItem('userAvatar') || '🦦';
-  }
+  userLocation: google.maps.LatLngLiteral | undefined;
+  nearbyRestaurants: any[] = [];
+  fullRestaurantList: any[] = [];
+  selectedRestaurant = signal<any | null>(null);
 
   constructor() {
     this._animatePulse();
   }
 
-  userLocation: google.maps.LatLngLiteral | undefined;
-  nearbyRestaurants: any[] = [];
-  fullRestaurantList: any[] = [];
+  // 💥 NEW: Ionic hook so it checks for fresh data every time the tab opens
+  ngOnInit(): void {
+    const savedLoc = this.state.lastLocation();
+    const savedRest = this.state.lastRestaurants();
+
+    if (savedLoc && savedRest.length > 0) {
+      if (this.state.isDataStale()) {
+        console.log('[HOME] Filters changed! Auto-refreshing map...');
+        this.refreshMap();
+      } else {
+        console.log('[HOME] Data is still fresh. Restoring map.');
+        this.userLocation = savedLoc;
+        this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+        this.fullRestaurantList = savedRest;
+        this.nearbyRestaurants = savedRest;
+        this.loadingLocation.set(false);
+      }
+    } else {
+      this.getUserLocation();
+    }
+  }
+
+  ngOnDestroy(): void {
+    cancelAnimationFrame(this._rafId);
+  }
+
+  // 💥 NEW: Detects if we are using GPS or the custom city search bar
+  refreshMap() {
+    this.nearbyRestaurants = [];
+    this.loadingLocation.set(true);
+
+    if (this.searchLocation().trim() !== '') {
+      this.performSearch();
+    } else {
+      this.getUserLocation();
+    }
+  }
+
+  // 💥 THE FUSE & FALLBACK LOGIC
+  getUserLocation() {
+    console.log('[GEO] 1. getUserLocation() called');
+    this.loadingLocation.set(true);
+
+    let locationResolved = false;
+
+    // 4-Second Fuse for Desktop Testing
+    const fuse = setTimeout(() => {
+      if (!locationResolved) {
+        console.warn('[GEO] 2. MANUAL TIMEOUT (4s) hit! Forcing fallback.');
+        locationResolved = true;
+        this.handleLocationFallback();
+      }
+    }, 4000);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          if (locationResolved) return;
+
+          locationResolved = true;
+          clearTimeout(fuse);
+          console.log('[GEO] 3. Fuse defused. Got coordinates.');
+
+          this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+          this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+
+          await this.fetchYelpData(this.userLocation.lat, this.userLocation.lng);
+        },
+        (error) => {
+          if (locationResolved) return;
+          locationResolved = true;
+          clearTimeout(fuse);
+          console.warn('[GEO] Error callback hit!', error.message);
+          this.handleLocationFallback();
+        },
+        {
+          enableHighAccuracy: Capacitor.isNativePlatform(),
+          timeout: 4000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      if (locationResolved) return;
+      locationResolved = true;
+      clearTimeout(fuse);
+      this.handleLocationFallback();
+    }
+  }
+
+  async handleLocationFallback() {
+    console.log('[FALLBACK] Triggered! Using Mesa, AZ');
+    this.userLocation = { lat: 33.4152, lng: -111.8315 };
+    this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+
+    // Skip dropping animation for fallback to load instantly
+    const results = await this.fetchYelpData(this.userLocation.lat, this.userLocation.lng, true);
+    if (results) this.nearbyRestaurants = [...results];
+  }
+
+  // 💥 NEW: Unified fetcher to ensure we always pass the right filters
+  async fetchYelpData(lat: number | null, lng: number | null, instantLoad = false, city?: string) {
+    try {
+      const results = await this.yelp.getRestaurants(
+        lat, lng,
+        this.state.searchRadius(),
+        this.state.yelpCategoryString(), // 💥 FIX: Send the aliases to Yelp!
+        this.state.openNow(),
+        this.state.priceFilter(),
+        city
+      );
+
+      this.fullRestaurantList = results;
+
+      // Reset the stale data trackers (Make sure it tracks the string now!)
+      this.state.lastFetchRadius.set(this.state.searchRadius());
+      this.state.lastFetchCuisines.set(this.state.yelpCategoryString()); this.state.lastFetchOpenNow.set(this.state.openNow());
+      this.state.lastFetchPrice.set(this.state.priceFilter().join(','));
+
+      if (lat && lng) {
+        this.state.lastLocation.set({ lat, lng });
+      }
+      this.state.lastRestaurants.set(this.fullRestaurantList);
+
+      if (!instantLoad) {
+        results.forEach((restaurant, index) => {
+          setTimeout(async () => {
+            this.nearbyRestaurants.push(restaurant);
+            if (Capacitor.isNativePlatform()) {
+              await Haptics.impact({ style: ImpactStyle.Light });
+            }
+          }, index * 80);
+        });
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Yelp fetch failed:', error);
+      return null;
+    } finally {
+      this.loadingLocation.set(false);
+    }
+  }
+
+  async performSearch() {
+    const city = this.searchLocation().trim();
+    if (!city) return;
+
+    this.loadingLocation.set(true);
+    this.nearbyRestaurants = [];
+
+    const results = await this.fetchYelpData(null, null, false, city);
+
+    // 💥 FIX: Check both lat and lng to explicitly guarantee they are numbers
+    if (results && results.length > 0 && typeof results[0].lat === 'number' && typeof results[0].lng === 'number') {
+
+      // 💥 FIX: Build a concrete object so TypeScript knows it is 100% safe
+      const newLoc = { lat: results[0].lat, lng: results[0].lng };
+
+      this.userLocation = newLoc;
+      this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+      this.state.lastLocation.set(newLoc); // Pass the safe object to state
+
+    } else {
+      alert('Could not find that location. Try a city name or zip code.');
+    }
+  }
+
+  resetToCurrentLocation() {
+    this.searchLocation.set('');
+    this.getUserLocation();
+  }
+
+  // ── Helpers & Map config ────────────────────────────────────
+  get myAvatar(): string { return localStorage.getItem('userAvatar') || '🦦'; }
+
+  openRestaurantCard(r: any) { this.selectedRestaurant.set(r); }
+  closeDetail() { this.selectedRestaurant.set(null); }
+  onStartClicked() { this.start.emit(this.fullRestaurantList); }
+
+  private _animatePulse(): void {
+    const start = performance.now();
+    const tick = (now: number) => {
+      this.mapPulse.set(((now - start) / 2300) % 1);
+      this._rafId = requestAnimationFrame(tick);
+    };
+    this._rafId = requestAnimationFrame(tick);
+  }
 
   userMarkerIcon: any = {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -62,46 +245,18 @@ export class HomeComponent {
     anchor: { x: 12, y: 12 }
   };
 
-  restaurantIcon: any = {
-    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" fill="#F59E0B" stroke="#131A24" stroke-width="2.5"/></svg>`),
-    scaledSize: { width: 16, height: 16 },
-    anchor: { x: 8, y: 8 }
-  };
-
-  dropMarkerOptions: google.maps.MarkerOptions = {
-    animation: google.maps.Animation.DROP
-  };
+  dropMarkerOptions: google.maps.MarkerOptions = { animation: google.maps.Animation.DROP };
 
   get radiusOptions(): google.maps.CircleOptions {
     return {
-      // Convert miles from your AppState into meters
       radius: this.state.searchRadius() * 1609.34,
-      fillColor: '#60A5FA', // Tastebuddy Blue
-      fillOpacity: 0.05,    // Very subtle fill so it doesn't hide roads
-      strokeColor: '#60A5FA',
-      strokeOpacity: 0.3,
-      strokeWeight: 1.5,
-      clickable: false,     // Ensures the circle doesn't block clicks on the map itself
+      fillColor: '#60A5FA', fillOpacity: 0.05, strokeColor: '#60A5FA',
+      strokeOpacity: 0.3, strokeWeight: 1.5, clickable: false,
     };
   }
 
-  refreshMap() {
-    this.nearbyRestaurants = []; // Clear current pins
-    this.loadingLocation.set(true);
-
-    // 💥 FIX: If there is a city in the search bar, refresh that city. Otherwise, use GPS.
-    if (this.searchLocation().trim() !== '') {
-      this.performSearch();
-    } else {
-      this.getUserLocation();
-    }
-  }
-
-  // 1. Map Yelp's dynamic cuisine text to your preferred emojis
   getEmojiForCuisine(cuisine: string): string {
     const c = cuisine.toLowerCase();
-
-    // 💥 FIX: Added burrito and a few others to be safe!
     if (c.includes('mexican') || c.includes('taco') || c.includes('burrito')) return '🌮';
     if (c.includes('burger') || c.includes('american') || c.includes('fast food')) return '🍔';
     if (c.includes('pizza') || c.includes('italian')) return '🍕';
@@ -110,186 +265,45 @@ export class HomeComponent {
     if (c.includes('coffee') || c.includes('cafe') || c.includes('tea')) return '☕';
     if (c.includes('breakfast') || c.includes('brunch')) return '🥞';
     if (c.includes('dessert') || c.includes('ice cream') || c.includes('bakery')) return '🍦';
-
-    return '🍽️'; // Default fallback
+    return '🍽️';
   }
 
-  // 2. Dynamically generate the floating SVG marker
   getRestaurantMarker(restaurant: any, index: number): any {
-    // Your exact original color palette
     const themes = [
-      { bg: 'rgba(74, 222, 128, 0.22)', solid: '#15803D' },  // Green
-      { bg: 'rgba(96, 165, 250, 0.22)', solid: '#1D4ED8' },  // Blue
-      { bg: 'rgba(245, 158, 11, 0.22)', solid: '#B45309' },  // Orange
-      { bg: 'rgba(244, 114, 182, 0.22)', solid: '#BE185D' }, // Pink
-      { bg: 'rgba(167, 139, 250, 0.22)', solid: '#6D28D9' }  // Purple
+      { bg: 'rgba(74, 222, 128, 0.22)', solid: '#15803D' },
+      { bg: 'rgba(96, 165, 250, 0.22)', solid: '#1D4ED8' },
+      { bg: 'rgba(245, 158, 11, 0.22)', solid: '#B45309' },
+      { bg: 'rgba(244, 114, 182, 0.22)', solid: '#BE185D' },
+      { bg: 'rgba(167, 139, 250, 0.22)', solid: '#6D28D9' }
     ];
-
-    // Cycle through colors so the map is diverse
     const theme = themes[index % themes.length];
     const emoji = this.getEmojiForCuisine(restaurant.cuisine);
-
-    // Build the custom SVG with a drop shadow for the floating effect
-    const svg = `
-                                                                                                                       <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                                                                                                               <ellipse cx="20" cy="34" rx="8" ry="2.5" fill="rgba(0,0,0,0.5)" />
-
-                                                                                                                                               <g transform="translate(0, -4)">
-                                                                                                                                                         <circle cx="20" cy="20" r="16" fill="${theme.bg}" />
-                                                                                                                                                                   <circle cx="20" cy="20" r="11" fill="${theme.solid}" />
-                                                                                                                                                                             <text x="20" y="24" text-anchor="middle" font-size="12" font-family="Arial, sans-serif">${emoji}</text>
-                                                                                                                                                                                     </g>
-                                                                                                                                                                                           </svg>
-                                                                                                                                                                                               `;
-
-    return {
-      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-      scaledSize: { width: 40, height: 40 },
-      anchor: { x: 20, y: 34 } // Anchors the marker exactly at the shadow's center
-    };
+    const svg = `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="34" rx="8" ry="2.5" fill="rgba(0,0,0,0.5)" /><g transform="translate(0, -4)"><circle cx="20" cy="20" r="16" fill="${theme.bg}" /><circle cx="20" cy="20" r="11" fill="${theme.solid}" /><text x="20" y="24" text-anchor="middle" font-size="12" font-family="Arial, sans-serif">${emoji}</text></g></svg>`;
+    return { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: { width: 40, height: 40 }, anchor: { x: 20, y: 34 } };
   }
 
-
-  // --- WAYMO-STYLE DARK MAP CONFIGURATION ---
   mapOptions: google.maps.MapOptions = {
     center: { lat: 33.4152, lng: -111.8315 },
-    zoom: 14,
-    disableDefaultUI: true, // Hides all Google UI buttons (zoom, street view)
-    clickableIcons: false,  // Prevents tapping on random map elements
-    backgroundColor: '#131A24',
+    zoom: 14, disableDefaultUI: true, clickableIcons: false, backgroundColor: '#131A24',
     styles: [
       { elementType: "geometry", stylers: [{ color: "#131A24" }] },
-      { elementType: "labels.icon", stylers: [{ visibility: "off" }] }, // Turns off all icons
+      { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
       { elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
       { elementType: "labels.text.stroke", stylers: [{ color: "#131A24" }] },
       { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
-      { featureType: "poi", stylers: [{ visibility: "off" }] }, // Turns off businesses
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
       { featureType: "road", elementType: "geometry", stylers: [{ color: "#1E293B" }] },
       { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#0B0F1A" }] },
       { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
-      { featureType: "transit", stylers: [{ visibility: "off" }] }, // Turns off bus/train lines
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
       { featureType: "water", elementType: "geometry", stylers: [{ color: "#0B0F1A" }] }
     ]
   };
 
-  // 💥 NEW: Ionic lifecycle hook. Runs EVERY time this tab appears on screen.
-  ionViewWillEnter(): void {
-    const savedLoc = this.state.lastLocation();
-    const savedRest = this.state.lastRestaurants();
-
-    if (savedLoc && savedRest.length > 0) {
-
-      // Check if the user just changed filters on the profile page
-      if (this.state.isDataStale()) {
-        console.log('Filters changed! Auto-refreshing map...');
-        this.refreshMap(); // This clears the old pins and fetches fresh data!
-      } else {
-        // Data is still fresh. Instantly restore the map.
-        this.userLocation = savedLoc;
-        this.mapOptions = { ...this.mapOptions, center: this.userLocation };
-        this.fullRestaurantList = savedRest;
-        this.nearbyRestaurants = savedRest;
-        this.loadingLocation.set(false);
-      }
-
-    } else {
-      // First time loading the app, do the full fetch and animation
-      this.getUserLocation();
-    }
-  }
-
-  selectedRestaurant = signal<any | null>(null);
-
-  openRestaurantCard(r: any) {
-    this.selectedRestaurant.set(r);
-  }
-
-  closeDetail() {
-    this.selectedRestaurant.set(null);
-  }
-
-  getUserLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          this.loadingLocation.set(false);
-          this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-          this.mapOptions = { ...this.mapOptions, center: this.userLocation };
-
-          try {
-            this.fullRestaurantList = await this.yelp.getRestaurants(
-              this.userLocation.lat,
-              this.userLocation.lng,
-              this.state.searchRadius(),
-              this.state.selectedCuisines(),
-              this.state.openNow(),     // 💥 NEW: Send Open Now
-              this.state.priceFilter()  // 💥 NEW: Send Price
-            );
-
-            // 💥 FIX: Log all parameters so the "Stale" detector resets
-            this.state.lastFetchRadius.set(this.state.searchRadius());
-            this.state.lastFetchCuisines.set(this.state.selectedCuisines());
-            this.state.lastFetchOpenNow.set(this.state.openNow());
-            this.state.lastFetchPrice.set(this.state.priceFilter().join(','));
-
-            this.state.lastLocation.set(this.userLocation);
-            this.state.lastRestaurants.set(this.fullRestaurantList);
-
-            this.fullRestaurantList.forEach((restaurant, index) => {
-              setTimeout(async () => {
-                this.nearbyRestaurants.push(restaurant);
-                if (Capacitor.isNativePlatform()) {
-                  await Haptics.impact({ style: ImpactStyle.Light });
-                }
-              }, index * 80);
-            });
-
-          } catch (error) {
-            console.error('Yelp fetch failed:', error);
-            this.loadingLocation.set(false);
-          }
-        },
-        (error) => {
-          console.error('Location denied', error);
-          this.loadingLocation.set(false);
-        },
-        { enableHighAccuracy: true }
-      );
-    }
-  }
-
-  onStartClicked() {
-    // FIX: Emit the full list so we don't miss any if the user clicks quickly
-    this.start.emit(this.fullRestaurantList);
-  }
-
-  ngOnDestroy(): void {
-    cancelAnimationFrame(this._rafId);
-  }
-
-  // ── Map pulse animation ────────────────────────────────────
-  private _animatePulse(): void {
-    const start = performance.now();
-    const tick = (now: number) => {
-      this.mapPulse.set(((now - start) / 2300) % 1);
-      this._rafId = requestAnimationFrame(tick);
-    };
-    this._rafId = requestAnimationFrame(tick);
-  }
-
-  // ── Getters ────────────────────────────────────────────────
-  get hasGroups(): boolean {
-    return this.state.groups().length > 0;
-  }
-
-  get recentGroups(): ForkupGroup[] {
-    return this.state.groups().filter(g => !g.isLive).slice(0, 2);
-  }
-
-  get activeGroup(): ForkupGroup | undefined {
-    return this.state.groups().find(g => g.isLive);
-  }
-
+  // Group Getters
+  get hasGroups(): boolean { return this.state.groups().length > 0; }
+  get recentGroups(): ForkupGroup[] { return this.state.groups().filter(g => !g.isLive).slice(0, 2); }
+  get activeGroup(): ForkupGroup | undefined { return this.state.groups().find(g => g.isLive); }
   getLastMatch(group: ForkupGroup): string | null {
     for (const s of group.sessions) {
       const full = s.matches.find(m => m.isFull);
@@ -297,168 +311,51 @@ export class HomeComponent {
     }
     return null;
   }
-
   getMemberNames(members: GroupMember[]): string {
     if (members.length === 1) return members[0].username;
     if (members.length === 2) return `${members[0].username} & ${members[1].username}`;
     return `${members[0].username}, ${members[1].username} & ${members[2].username}`;
   }
-
   getMemberShort(members: GroupMember[]): string {
     if (members.length <= 2) return this.getMemberNames(members);
     return `${members[0].username}, ${members[1].username} & ${members[2].username}`;
   }
+  memberClass(colorIndex: number): string { return `av-${colorIndex}`; }
 
-  memberClass(colorIndex: number): string {
-    return `av-${colorIndex}`;
-  }
-
-  // ── Actions ────────────────────────────────────────────────
+  // Actions
   async startSession() {
     this.creating.set(true);
     try {
-      const code = await this.state.startSession(
-        this.userLocation?.lat ?? 33.4152,
-        this.userLocation?.lng ?? -111.8315
-      );
+      const code = await this.state.startSession(this.userLocation?.lat ?? 33.4152, this.userLocation?.lng ?? -111.8315);
       this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
-    } finally {
-      this.creating.set(false);
-    }
+    } finally { this.creating.set(false); }
   }
-
-  goJoin(): void {
-    this.router.navigate(['/join']);
-  }
-
-  goProfile(): void {
-    this.router.navigate(['/tabs/profile']);
-  }
-
-  goRejoin(): void {
-    this.router.navigate(['/tabs/swipe']);
-  }
-
-  confirmEnd(): void {
-    this.showEndDialog.set(true);
-  }
-
-  async doEnd(): Promise<void> {
-    await this.state.endSession();
-    this.showEndDialog.set(false);
-  }
-
+  goJoin(): void { this.router.navigate(['/join']); }
+  goProfile(): void { this.router.navigate(['/tabs/profile']); }
+  goRejoin(): void { this.router.navigate(['/tabs/swipe']); }
+  confirmEnd(): void { this.showEndDialog.set(true); }
+  async doEnd(): Promise<void> { await this.state.endSession(); this.showEndDialog.set(false); }
   openSwipeAgain(group: ForkupGroup): void {
-    this.selectedGroup.set(group);
-    this.newRoomCode.set(generateRoomCode());
-    this.showSwipeAgainSheet.set(true);
+    this.selectedGroup.set(group); this.newRoomCode.set(generateRoomCode()); this.showSwipeAgainSheet.set(true);
   }
-
   async confirmSwipeAgain(): Promise<void> {
-    this.showSwipeAgainSheet.set(false);
-    if (!this.selectedGroup()) return;
+    this.showSwipeAgainSheet.set(false); if (!this.selectedGroup()) return;
     this.creating.set(true);
     try {
-      const code = await this.state.startSession(
-        this.userLocation?.lat ?? 33.4152,
-        this.userLocation?.lng ?? -111.8315,
-        this.newRoomCode()
-      );
+      const code = await this.state.startSession(this.userLocation?.lat ?? 33.4152, this.userLocation?.lng ?? -111.8315, this.newRoomCode());
       this.router.navigate(['/tabs/swipe'], { queryParams: { code } });
-    } finally {
-      this.creating.set(false);
-    }
+    } finally { this.creating.set(false); }
   }
-
   async shareCode() {
     const code = this.state.activeRoomCode();
-
-    // 💥 CHANGED: Point to your Firebase Web App domain
     const inviteLink = `https://tastebuddyv2.web.app/join/${code}`;
-
     try {
       if (Capacitor.isNativePlatform()) {
-        await Share.share({
-          title: 'Join my Tastebuddy room!',
-          text: `Help me decide where to eat! Tap the link or enter code ${code}`,
-          url: inviteLink,
-          dialogTitle: 'Invite friends'
-        });
-      } else {
-        // If testing on the web, force the fallback
-        throw new Error('Not running on a native device');
-      }
+        await Share.share({ title: 'Join my Tastebuddy room!', text: `Help me decide where to eat! Tap the link or enter code ${code}`, url: inviteLink });
+      } else { throw new Error('Not running on native'); }
     } catch (error) {
-      // 💥 2. Fallback: Copy the FULL link and show an alert so you know it worked
-      navigator.clipboard.writeText(inviteLink).then(() => {
-        alert(`Invite link copied to clipboard!\n\n${inviteLink}`);
-      }).catch(() => {
-        // Just in case the clipboard API is completely blocked
-        alert(`Tell your friends to join room: ${code}`);
-      });
+      navigator.clipboard.writeText(inviteLink).then(() => alert(`Invite link copied!\n\n${inviteLink}`)).catch(() => alert(`Join room: ${code}`));
     }
   }
-
-  goGroupDetail(id: string): void {
-    this.router.navigate(['/tabs/groups', id]);
-  }
-
-  // 💥 NEW: Signal to track the city search
-  searchLocation = signal<string>('');
-
-  async performSearch() {
-    const city = this.searchLocation().trim();
-    if (!city) return;
-
-    this.loadingLocation.set(true);
-    this.nearbyRestaurants = []; // Clear current list
-
-    try {
-      const results = await this.yelp.getRestaurants(
-        null, null, // No GPS needed
-        this.state.searchRadius(),
-        this.state.selectedCuisines(),
-        this.state.openNow(),
-        this.state.priceFilter(),
-        city // Pass the city string here
-      );
-
-      this.fullRestaurantList = results;
-
-      // 💥 FIX: Log the parameters we just used so the "Stale Data" loop stops!
-      this.state.lastFetchRadius.set(this.state.searchRadius());
-      this.state.lastFetchCuisines.set(this.state.selectedCuisines());
-      this.state.lastFetchOpenNow.set(this.state.openNow());
-      this.state.lastFetchPrice.set(this.state.priceFilter().join(','));
-
-      // If we got results, center the map on the first restaurant found in that city
-      if (results.length > 0 && results[0].lat !== undefined && results[0].lng !== undefined) {
-        this.userLocation = { lat: results[0].lat, lng: results[0].lng };
-        this.mapOptions = { ...this.mapOptions, center: this.userLocation };
-      }
-
-      this.state.lastRestaurants.set(results);
-      this.loadingLocation.set(false);
-
-      // Re-trigger the pin dropping animation
-      results.forEach((r, i) => setTimeout(async () => {
-        this.nearbyRestaurants.push(r);
-
-        if (Capacitor.isNativePlatform()) {
-          await Haptics.impact({ style: ImpactStyle.Light });
-        }
-      }, i * 80));
-
-    } catch (error) {
-      console.error('City search failed', error);
-      this.loadingLocation.set(false);
-      alert('Could not find that location. Try a city name or zip code.');
-    }
-  }
-
-  // 💥 NEW: Clear search and go back to GPS
-  resetToCurrentLocation() {
-    this.searchLocation.set('');
-    this.getUserLocation();
-  }
+  goGroupDetail(id: string): void { this.router.navigate(['/tabs/groups', id]); }
 }

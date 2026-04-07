@@ -9,14 +9,14 @@ const CUISINE_OPTIONS = [
   { id: 'all', label: 'All cuisines', emoji: '🍽️', yelpAlias: '' },
   { id: 'asian', label: 'Asian', emoji: '🍜', yelpAlias: 'asianfusion,chinese,thai,vietnamese,korean' },
   { id: 'italian', label: 'Italian', emoji: '🍕', yelpAlias: 'italian' },
-  { id: 'american', label: 'American', emoji: '🍔', yelpAlias: 'newamerican,tradamerican,hotdogs' },
-  { id: 'mexican', label: 'Mexican', emoji: '🌮', yelpAlias: 'mexican' },
+  { id: 'american', label: 'American', emoji: '🍔', yelpAlias: 'newamerican,tradamerican,hotdogs,burgers' },
+  { id: 'mexican', label: 'Mexican', emoji: '🌮', yelpAlias: 'mexican,tacos' },
   { id: 'japanese', label: 'Japanese', emoji: '🍣', yelpAlias: 'japanese,sushi' },
   { id: 'healthy', label: 'Healthy', emoji: '🥗', yelpAlias: 'salad,vegetarian,vegan' },
   { id: 'indian', label: 'Indian', emoji: '🍛', yelpAlias: 'indpak' },
-  { id: 'coffee', label: 'Coffee & Tea', emoji: '☕' },
-  { id: 'desserts', label: 'Desserts', emoji: '🍩' },
-  { id: 'bakeries', label: 'Bakeries', emoji: '🥐' },
+  { id: 'coffee', label: 'Coffee & Tea', emoji: '☕', yelpAlias: 'coffee' },
+  { id: 'desserts', label: 'Desserts', emoji: '🍩', yelpAlias: 'desserts' },
+  { id: 'bakeries', label: 'Bakeries', emoji: '🥐', yelpAlias: 'bakeries' },
 ];
 
 // Export so YelpService can use it
