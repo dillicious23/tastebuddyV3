@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyA7PciZMuuF6Btk2LUKkD2nEqTEIHm4lnY</string>
+	<key>GCM_SENDER_ID</key>
+	<string>533654260844</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tastebuddy.app</string>
+	<key>PROJECT_ID</key>
+	<string>tastebuddyv2</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tastebuddyv2.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:533654260844:ios:81b4b6a81d6911a42a5c49</string>
+</dict>
+</plist>

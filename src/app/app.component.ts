@@ -3,6 +3,7 @@ import { RouterOutlet, Router } from '@angular/router';
 import { Geolocation } from '@capacitor/geolocation';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 
 @Component({
   selector: 'app-root',
@@ -47,6 +48,7 @@ export class AppComponent implements OnInit {
 
   async ngOnInit() {
     await this.requestLocationPermissions();
+    await this.registerPushNotifications();
   }
 
   async requestLocationPermissions() {
@@ -62,4 +64,33 @@ export class AppComponent implements OnInit {
       console.error('Error requesting location permissions:', err);
     }
   }
+
+  async registerPushNotifications() {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+      let permStatus = await FirebaseMessaging.checkPermissions();
+
+      if (permStatus.receive === 'prompt') {
+        permStatus = await FirebaseMessaging.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
+        console.warn('Push permissions denied');
+        return;
+      }
+
+      // Register for Firebase Push
+      await FirebaseMessaging.getToken();
+
+      // Listen for incoming messages
+      FirebaseMessaging.addListener('notificationReceived', (event) => {
+        console.log('Push received: ', event.notification);
+      });
+
+    } catch (error) {
+      console.error('Push Setup Failed:', error);
+    }
+  }
+
 }

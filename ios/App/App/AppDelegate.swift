@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import FirebaseCore
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +9,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        let firebaseOptions = FirebaseOptions(googleAppID: "1:533654260844:ios:81b4b6a81d6911a42a5c49", gcmSenderID: "533654260844")
+        firebaseOptions.apiKey = "AIzaSyA7PciZMuuF6Btk2LUKkD2nEqTEIHm4lnY"
+        firebaseOptions.projectID = "tastebuddyv2"
+        firebaseOptions.bundleID = "com.tastebuddy.app"
         return true
     }
 

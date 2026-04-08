@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "533654260844",
+    "project_id": "tastebuddyv2",
+    "storage_bucket": "tastebuddyv2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533654260844:android:af0b0d3d8f9d0ccc2a5c49",
+        "android_client_info": {
+          "package_name": "com.tastebuddy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBO0byTTWJSA5eepbiIFwNU5Ec2uY7dUv4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
