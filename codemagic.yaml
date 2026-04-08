@@ -4,13 +4,12 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:
-      app_store_connect: Codemagic Build tastebuddy-api-key
+      # ⚠️ This name MUST exactly match the name you typed in the Codemagic Integrations menu!
+      app_store_connect: Codemagic Build tastebuddy-api-key 
     environment:
       node: 20
       xcode: latest
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.tastebuddy.app
+      # Notice we removed the ios_signing block here!
     scripts:
       - name: Install npm dependencies
         script: npm install
@@ -18,14 +17,24 @@ workflows:
         script: npm run build
       - name: Sync Capacitor iOS
         script: npx cap sync ios
+        
+      # 💥 THIS IS THE CRITICAL SCRIPT THAT FIXES YOUR ERROR 💥
+      - name: Fetch and Create Apple Certificates
+        script: |
+          app-store-connect fetch-signing-files "com.tastebuddy.app" \
+            --type IOS_APP_STORE \
+            --create
+            
       - name: Codemagic Auto-Signing (The SPM Fix)
         script: |
           xcode-project use-profiles
+          
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
             --scheme "App"
+            
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
