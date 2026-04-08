@@ -4,7 +4,9 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     
-    # 💥 We DELETED the integrations block! 💥
+    # 💥 Put the API key back so Codemagic can log into Apple to upload the app 💥
+    integrations:
+      app_store_connect: tastebuddy-api-key 
     
     environment:
       node: 22
@@ -34,3 +36,9 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+      
+    # 💥 ADD THIS PUBLISHING BLOCK AT THE VERY BOTTOM 💥
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
