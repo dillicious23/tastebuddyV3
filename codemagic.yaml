@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     integrations:
       # ⚠️ This name MUST exactly match the name you typed in the Codemagic Integrations menu!
-      app_store_connect: Codemagic Build tastebuddy-api-key 
+      app_store_connect: tastebuddy-api-key
     environment:
       node: 20
       xcode: latest
