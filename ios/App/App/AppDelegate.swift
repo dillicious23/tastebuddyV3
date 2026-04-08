@@ -13,6 +13,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         firebaseOptions.apiKey = "AIzaSyA7PciZMuuF6Btk2LUKkD2nEqTEIHm4lnY"
         firebaseOptions.projectID = "tastebuddyv2"
         firebaseOptions.bundleID = "com.tastebuddy.app"
+        
+        // 💥 THIS IS THE MAGIC LINE THAT WAS MISSING 💥
+        FirebaseApp.configure(options: firebaseOptions)
+        
         return true
     }
 
@@ -50,5 +54,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
+    
+    // 💥 NEW: These two functions are required to hand the Apple Token to Capacitor! 💥
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
 
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
 }
