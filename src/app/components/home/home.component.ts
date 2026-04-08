@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { FormsModule } from '@angular/forms';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Geolocation } from '@capacitor/geolocation';
+import { FirebaseSessionService } from 'src/app/services/firebase-session.service';
 
 @Component({
   selector: 'app-home',
@@ -42,9 +43,15 @@ export class HomeComponent implements OnInit, OnDestroy {
   fullRestaurantList: any[] = [];
   selectedRestaurant = signal<any | null>(null);
 
+  showInviteSheet = signal(false);
+  availableUsers = this.state.knownFriends;
+  isInviting = signal(false);
+
   constructor() {
     this._animatePulse();
   }
+
+  private fb = inject(FirebaseSessionService);
 
   // 💥 NEW: Ionic hook so it checks for fresh data every time the tab opens
   ngOnInit(): void {
@@ -318,6 +325,26 @@ export class HomeComponent implements OnInit, OnDestroy {
   memberClass(colorIndex: number): string { return `av-${colorIndex}`; }
 
   // Actions
+
+
+  openInviteSheet() {
+    this.showInviteSheet.set(true);
+    // No more Firebase fetching needed! The sheet opens instantly.
+  }
+
+  async sendInvite(targetUser: any) {
+    this.isInviting.set(true);
+    const code = this.state.activeRoomCode();
+
+    // Call the Mailman!
+    await this.fb.sendPushInvite(targetUser.uid, this.state.username(), code);
+
+    this.isInviting.set(false);
+    this.showInviteSheet.set(false);
+
+    alert(`Invite sent to ${targetUser.username}!`);
+  }
+
   async startSession() {
     this.creating.set(true);
     try {

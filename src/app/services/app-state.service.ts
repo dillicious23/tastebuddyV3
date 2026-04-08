@@ -85,6 +85,24 @@ export class AppStateService {
   readonly liveMatches = signal<SessionMatch[]>([]);
   readonly partialMatches = signal<SessionMatch[]>([]);
 
+  // 💥 NEW: Automatically extract a unique list of friends from your past sessions
+  readonly knownFriends = computed(() => {
+    const friendsMap = new Map<string, GroupMember>();
+
+    // Loop through all your past groups
+    for (const group of this.groups()) {
+      for (const m of group.members) {
+        // Don't add yourself, and ensure they have a UID recorded
+        if (m.uid && m.uid !== this.myUid) {
+          friendsMap.set(m.uid, m);
+        }
+      }
+    }
+
+    // Return them sorted alphabetically by username
+    return Array.from(friendsMap.values()).sort((a, b) => a.username.localeCompare(b.username));
+  });
+
   private _seenMatchIds = new Set<string>();
   private _roomSub: Subscription | null = null;
 
@@ -289,6 +307,14 @@ export class AppStateService {
   friendJoined(member: GroupMember): void { this._state.update(s => ({ ...s, isSolo: false, activeMembers: [...s.activeMembers, member] })); }
 
   private _dbMembersToGroupMembers(dbMembers: { [uid: string]: DbMember }): GroupMember[] {
-    return Object.values(dbMembers ?? {}).sort((a, b) => a.joinedAt - b.joinedAt).map(m => ({ initial: m.initial, colorIndex: m.colorIndex, username: m.username }));
+    // 💥 FIX: Use Object.entries to grab the hidden UID key from the database object
+    return Object.entries(dbMembers ?? {})
+      .sort(([, a], [, b]) => a.joinedAt - b.joinedAt)
+      .map(([uid, m]) => ({
+        uid: uid, // Capture the push notification ID!
+        initial: m.initial,
+        colorIndex: m.colorIndex,
+        username: m.username
+      }));
   }
 }

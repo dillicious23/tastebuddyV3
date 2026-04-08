@@ -32,6 +32,7 @@ export interface Restaurant {
 }
 
 export interface GroupMember {
+  uid?: string;
   initial: string;
   colorIndex: 0 | 1 | 2 | 3; // maps to --av0..3
   username: string;

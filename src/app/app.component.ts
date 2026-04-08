@@ -4,6 +4,8 @@ import { Geolocation } from '@capacitor/geolocation';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseMessaging } from '@capacitor-firebase/messaging';
+import { db } from './core/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 @Component({
   selector: 'app-root',
@@ -83,9 +85,40 @@ export class AppComponent implements OnInit {
       // Register for Firebase Push
       await FirebaseMessaging.getToken();
 
+      // Register for Firebase Push
+      const token = await FirebaseMessaging.getToken();
+
+      // Save this user's token to the global address book!
+      const myUid = localStorage.getItem('tb_uid');
+      const myUsername = localStorage.getItem('tb_username') || 'Someone';
+
+      // 💥 FIX: Changed token.value to token.token 💥
+      if (myUid && token.token) {
+        await setDoc(doc(db, 'users', myUid), {
+          uid: myUid,
+          username: myUsername,
+          fcmToken: token.token,
+          lastActive: Date.now()
+        }, { merge: true });
+      }
+
+
+
       // Listen for incoming messages
       FirebaseMessaging.addListener('notificationReceived', (event) => {
         console.log('Push received: ', event.notification);
+      });
+
+      // 💥 NEW: Triggered when the user taps the push notification from their home screen
+      FirebaseMessaging.addListener('notificationActionPerformed', (event: any) => {
+        const data = event.notification.data;
+
+        // If the notification contains a room code, jump straight to the join screen!
+        if (data && data['roomCode']) {
+          this.zone.run(() => {
+            this.router.navigate(['/join', data['roomCode']]);
+          });
+        }
       });
 
     } catch (error) {

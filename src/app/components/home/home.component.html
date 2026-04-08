@@ -1,7 +1,5 @@
-<!-- src/app/components/home/home.component.html -->
 <div class="screen">
 
-  <!-- ── Full-bleed animated map ─────────────────────────────── -->
   <div class="map-bg">
     <google-map height="100%" width="100%" [options]="mapOptions">
 
@@ -24,7 +22,6 @@
     Finding your location...
   </div>
 
-  <!-- ── Top bar ──────────────────────────────────────────────── -->
   <div class="top-bar safe-top">
     <span class="logo-text">taste<span>buddy</span></span>
     <div class="avatar-btn" (click)="goProfile()"
@@ -55,23 +52,8 @@
     </div>
   </div>
 
-  <!-- <div *ngIf="state.isDataStale()"
-    style="position: absolute; top: calc(max(env(safe-area-inset-top), 55px) + 125px); left: 0; right: 0; display: flex; justify-content: center; z-index: 10;">
-    <button (click)="refreshMap()"
-      style="background: rgba(11, 15, 26, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 9px 20px; border-radius: 30px; color: #FFFFFF; font-weight: 700; font-size: 13px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s;">
-
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.6 5.6"></path>
-      </svg>
-      Search this area
-    </button>
-  </div> -->
-
-  <!-- ── Bottom panel ─────────────────────────────────────────── -->
   <div class="bottom-panel">
 
-    <!-- Active session banner -->
     <ng-container *ngIf="state.hasActiveSession()">
       <div class="green-card br-lg active-banner">
         <div class="banner-top">
@@ -95,12 +77,13 @@
 
         <div class="banner-actions">
           <button class="btn-rejoin" (click)="goRejoin()">Rejoin →</button>
-          <button class="btn-share" (click)="shareCode()">Share</button>
+
+          <button class="btn-share" (click)="openInviteSheet()">Invite</button>
+
           <button class="btn-end" (click)="confirmEnd()">End</button>
         </div>
       </div>
 
-      <!-- Other groups visible alongside the active session -->
       <ng-container *ngIf="hasGroups">
         <div class="frosted br-lg groups-strip">
           <p class="label-caps" style="margin-bottom:8px">Other groups</p>
@@ -124,14 +107,12 @@
       </ng-container>
     </ng-container>
 
-    <!-- No active session: recent groups OR empty state -->
     <ng-container *ngIf="!state.hasActiveSession()">
       <div class="frosted br-lg groups-strip">
         <p class="label-caps" style="margin-bottom:8px">
           {{ hasGroups ? 'Swipe again with' : 'Recent groups' }}
         </p>
 
-        <!-- Groups exist -->
         <ng-container *ngIf="hasGroups">
           <div *ngFor="let g of recentGroups" class="group-row" (click)="openSwipeAgain(g)">
             <div class="avatar-stack">
@@ -151,7 +132,6 @@
           </div>
         </ng-container>
 
-        <!-- Empty state -->
         <ng-container *ngIf="!hasGroups">
           <div class="empty-groups">
             <div class="empty-avatar">
@@ -170,7 +150,6 @@
       </div>
     </ng-container>
 
-    <!-- Start / Join buttons -->
     <div class="cta-row">
       <button class="btn-start" (click)="startSession()" [disabled]="creating()">
         <span *ngIf="creating()" class="spinner" style="width:13px;height:13px;border-width:2px"></span>
@@ -190,7 +169,6 @@
     </div>
   </div>
 
-  <!-- ── End session dialog ───────────────────────────────────── -->
   <div class="sheet-overlay" *ngIf="showEndDialog()" (click)="showEndDialog.set(false)">
     <div class="sheet-body end-dialog" (click)="$event.stopPropagation()">
       <div class="sheet-handle"></div>
@@ -204,7 +182,6 @@
     </div>
   </div>
 
-  <!-- ── Swipe-again sheet ────────────────────────────────────── -->
   <div class="sheet-overlay" *ngIf="showSwipeAgainSheet()" (click)="showSwipeAgainSheet.set(false)">
     <div class="sheet-body" (click)="$event.stopPropagation()">
       <div class="sheet-handle"></div>
@@ -218,14 +195,12 @@
         </div>
       </div>
 
-      <!-- New room code -->
       <div class="code-block">
         <span class="label-caps">New room code</span>
         <div class="new-code">{{ newRoomCode() }}</div>
         <div class="code-sub">Fresh code · different from last time</div>
       </div>
 
-      <!-- Notification fallback -->
       <div class="notif-block">
         <span style="font-size:11px;font-weight:600;color:var(--blue)">How do they get the code?</span>
         <div class="notif-row">
@@ -282,5 +257,52 @@
       </div>
     </div>
   </div>
+
+  <ion-modal [isOpen]="showInviteSheet()" (didDismiss)="showInviteSheet.set(false)" [initialBreakpoint]="0.5"
+    [breakpoints]="[0, 0.5, 0.75]" style="--background: #131A24;">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar style="--background: transparent; padding-top: 10px;">
+          <ion-title style="color: white; font-weight: 800; font-size: 18px;">Invite Friends</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding" style="--background: transparent;">
+
+        <div *ngIf="availableUsers().length === 0"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 15px; text-align: center;">
+          <div style="font-size: 34px;">👻</div>
+          <span style="color: white; font-weight: 800; font-size: 18px;">No friends yet</span>
+          <span style="color: rgba(255,255,255,0.5); font-weight: 500; font-size: 14px; line-height: 1.4;">
+            Invite people using the 6-digit room code or Share Link first.<br><br>
+            Once you swipe with them, they'll appear here forever!
+          </span>
+        </div>
+
+        <ion-list lines="none" style="background: transparent;">
+          <ion-item *ngFor="let u of availableUsers()" (click)="sendInvite(u)" button detail="false"
+            style="--background: rgba(255,255,255,0.03); --border-radius: 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05);">
+
+            <ion-avatar slot="start"
+              style="background: rgba(96, 165, 250, 0.15); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(96, 165, 250, 0.3);">
+              <span style="color: #60A5FA; font-weight: 800; font-size: 16px;">{{ u.username[0] | uppercase }}</span>
+            </ion-avatar>
+
+            <ion-label>
+              <h2 style="color: white; font-weight: 700; font-size: 16px; margin-bottom: 2px;">{{ u.username }}</h2>
+              <p style="color: rgba(255,255,255,0.4); font-size: 12px; font-weight: 500;">Tap to send invite</p>
+            </ion-label>
+
+            <svg slot="end" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+
+          </ion-item>
+        </ion-list>
+
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 
 </div>

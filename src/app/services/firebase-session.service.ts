@@ -4,7 +4,9 @@
 import { inject, Injectable } from '@angular/core';
 import {
   collection, doc, setDoc, updateDoc, getDoc, getDocs,
-  onSnapshot, Unsubscribe, serverTimestamp, Timestamp,
+  onSnapshot, Unsubscribe, serverTimestamp, Timestamp, addDoc,
+  query,
+  limit,
 } from 'firebase/firestore';
 import { Observable } from 'rxjs';
 import { db } from '../core/firebase';
@@ -77,6 +79,19 @@ export class FirebaseSessionService {
       matches: {},
       restaurants: restaurantMap,
     });
+  }
+
+  async getAvailableUsers(): Promise<any[]> {
+    // For now, grab 50 users (you can add search/filtering later)
+    const q = query(collection(db, 'users'), limit(50));
+    const snap = await getDocs(q);
+
+    const myUid = localStorage.getItem('tb_uid');
+
+    // Return everyone EXCEPT yourself
+    return snap.docs
+      .map(d => d.data())
+      .filter(u => u['uid'] !== myUid);
   }
 
   // ── Join an existing room ────────────────────────────────────
@@ -185,4 +200,15 @@ export class FirebaseSessionService {
   async endRoom(code: string): Promise<void> {
     await updateDoc(doc(db, 'rooms', code), { status: 'ended' });
   }
+
+  // 💥 NEW: Drops a ticket in Firestore to trigger the push notification
+  async sendPushInvite(toUid: string, fromUsername: string, roomCode: string): Promise<void> {
+    await addDoc(collection(db, 'invites'), {
+      toUid: toUid,
+      fromUsername: fromUsername,
+      roomCode: roomCode,
+      timestamp: Date.now()
+    });
+  }
+
 }

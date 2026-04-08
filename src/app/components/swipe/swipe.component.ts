@@ -10,6 +10,7 @@ import { AppStateService } from '../../services/app-state.service';
 import { Restaurant } from '../../models/restaurant.model';
 import { CardContentComponent } from './card-content.component';
 import { Share } from '@capacitor/share';
+import { FirebaseSessionService } from '../../services/firebase-session.service';
 
 type SwipeDir = 'left' | 'right' | null;
 
@@ -24,6 +25,30 @@ export class SwipeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private state = inject(AppStateService);
   private cdr = inject(ChangeDetectorRef);
+  private fb = inject(FirebaseSessionService);
+
+  // 💥 NEW: Invite Sheet State
+  showInviteSheet = signal(false);
+  availableUsers = this.state.knownFriends;
+  isInviting = signal(false);
+
+  openInviteSheet() {
+    this.showInviteSheet.set(true);
+    // No more Firebase fetching needed! The sheet opens instantly.
+  }
+
+  async sendInvite(targetUser: any) {
+    this.isInviting.set(true);
+    const code = this.state.activeRoomCode();
+
+    // Call the Mailman!
+    await this.fb.sendPushInvite(targetUser.uid, this.state.username(), code);
+
+    this.isInviting.set(false);
+    this.showInviteSheet.set(false);
+
+    alert(`Invite sent to ${targetUser.username}!`);
+  }
 
   // Card data — driven from Firebase via state.deck signal
   get deck(): Restaurant[] { return this.state.deck(); }

@@ -20,7 +20,7 @@
       </button>
 
       <!-- Share -->
-      <button class="pill" (click)="shareCode()">Share</button>
+      <button class="pill" (click)="openInviteSheet()">Share</button>
 
       <!-- Online count -->
       <div class="pill" [ngClass]="isSolo() ? 'pill-amber' : 'pill-green'">
@@ -124,7 +124,7 @@
 
     <!-- CTAs -->
     <div class="wait-ctas">
-      <button class="wait-btn-share" (click)="shareCode()">
+      <button class="wait-btn-share" (click)="openInviteSheet()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3"></circle>
@@ -373,5 +373,52 @@
       <button class="btn-secondary" (click)="showLeaveConfirm.set(false)">Stay</button>
     </div>
   </div>
+
+  <ion-modal [isOpen]="showInviteSheet()" (didDismiss)="showInviteSheet.set(false)" [initialBreakpoint]="0.5"
+    [breakpoints]="[0, 0.5, 0.75]" style="--background: #131A24;">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar style="--background: transparent; padding-top: 10px;">
+          <ion-title style="color: white; font-weight: 800; font-size: 18px;">Invite Friends</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding" style="--background: transparent;">
+
+        <div *ngIf="availableUsers().length === 0"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 15px; text-align: center;">
+          <div style="font-size: 34px;">👻</div>
+          <span style="color: white; font-weight: 800; font-size: 18px;">No friends yet</span>
+          <span style="color: rgba(255,255,255,0.5); font-weight: 500; font-size: 14px; line-height: 1.4;">
+            Invite people using the 6-digit room code or Share Link first.<br><br>
+            Once you swipe with them, they'll appear here forever!
+          </span>
+        </div>
+
+        <ion-list lines="none" style="background: transparent;">
+          <ion-item *ngFor="let u of availableUsers()" (click)="sendInvite(u)" button detail="false"
+            style="--background: rgba(255,255,255,0.03); --border-radius: 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05);">
+
+            <ion-avatar slot="start"
+              style="background: rgba(96, 165, 250, 0.15); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(96, 165, 250, 0.3);">
+              <span style="color: #60A5FA; font-weight: 800; font-size: 16px;">{{ u.username[0] | uppercase }}</span>
+            </ion-avatar>
+
+            <ion-label>
+              <h2 style="color: white; font-weight: 700; font-size: 16px; margin-bottom: 2px;">{{ u.username }}</h2>
+              <p style="color: rgba(255,255,255,0.4); font-size: 12px; font-weight: 500;">Tap to send invite</p>
+            </ion-label>
+
+            <svg slot="end" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+
+          </ion-item>
+        </ion-list>
+
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 
 </div>
