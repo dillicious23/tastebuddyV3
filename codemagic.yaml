@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:
-      app_store_connect: Tastebuddy Key # Ensure this matches your API key name
+      app_store_connect: tastebuddy-api-key
     environment:
       node: latest
       xcode: latest
