@@ -10,6 +10,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { FormsModule } from '@angular/forms';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Geolocation } from '@capacitor/geolocation';
 
 @Component({
   selector: 'app-home',
@@ -84,7 +85,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // 💥 THE FUSE & FALLBACK LOGIC
-  getUserLocation() {
+  // 💥 THE FUSE & NATIVE CAPACITOR LOGIC
+  async getUserLocation() {
     console.log('[GEO] 1. getUserLocation() called');
     this.loadingLocation.set(true);
 
@@ -99,37 +101,30 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     }, 4000);
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          if (locationResolved) return;
+    try {
+      // 💥 THIS IS THE FIX: Ask the native device, not the web browser!
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: Capacitor.isNativePlatform(),
+        timeout: 4000,
+        maximumAge: 0
+      });
 
-          locationResolved = true;
-          clearTimeout(fuse);
-          console.log('[GEO] 3. Fuse defused. Got coordinates.');
+      if (locationResolved) return; // Ignore if the fuse already blew
 
-          this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-          this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+      locationResolved = true;
+      clearTimeout(fuse);
+      console.log('[GEO] 3. Fuse defused. Got native coordinates.');
 
-          await this.fetchYelpData(this.userLocation.lat, this.userLocation.lng);
-        },
-        (error) => {
-          if (locationResolved) return;
-          locationResolved = true;
-          clearTimeout(fuse);
-          console.warn('[GEO] Error callback hit!', error.message);
-          this.handleLocationFallback();
-        },
-        {
-          enableHighAccuracy: Capacitor.isNativePlatform(),
-          timeout: 4000,
-          maximumAge: 0
-        }
-      );
-    } else {
+      this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+      this.mapOptions = { ...this.mapOptions, center: this.userLocation };
+
+      await this.fetchYelpData(this.userLocation.lat, this.userLocation.lng);
+
+    } catch (error: any) {
       if (locationResolved) return;
       locationResolved = true;
       clearTimeout(fuse);
+      console.warn('[GEO] Native Geolocation Error!', error.message);
       this.handleLocationFallback();
     }
   }
