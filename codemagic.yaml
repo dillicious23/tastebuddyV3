@@ -3,15 +3,16 @@ workflows:
     name: Tastebuddy iOS App Store Build
     max_build_duration: 120
     instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: tastebuddy-api-key 
+    
+    # 💥 We DELETED the integrations block! 💥
+    
     environment:
       node: latest
       xcode: latest
-      # 💥 We put the native signing block back 💥
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.tastebuddy.app
+        
     scripts:
       - name: Install npm dependencies
         script: npm install
