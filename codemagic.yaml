@@ -8,7 +8,10 @@ workflows:
     environment:
       node: latest
       xcode: latest
-      # NO ios_signing block here!
+      # 💥 We put the native signing block back 💥
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.tastebuddy.app
     scripts:
       - name: Install npm dependencies
         script: npm install
@@ -16,13 +19,6 @@ workflows:
         script: npm run build
       - name: Sync Capacitor iOS
         script: npx cap sync ios
-        
-      # 💥 Because Apple now has an open slot, this will generate a fresh Certificate AND Profile! 💥
-      - name: Fetch and Create Apple Certificates
-        script: |
-          app-store-connect fetch-signing-files "com.tastebuddy.app" \
-            --type IOS_APP_STORE \
-            --create
             
       - name: Codemagic Auto-Signing (The SPM Fix)
         script: |
