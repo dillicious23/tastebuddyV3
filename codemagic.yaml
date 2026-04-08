@@ -7,7 +7,7 @@ workflows:
       # ⚠️ This name MUST exactly match the name you typed in the Codemagic Integrations menu!
       app_store_connect: tastebuddy-api-key
     environment:
-      node: 20
+      node: latest
       xcode: latest
       # Notice we removed the ios_signing block here!
     scripts:
