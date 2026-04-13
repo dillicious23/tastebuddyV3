@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { USERNAME_SUGGESTIONS } from '../../data/mock-data';
+import { FirebaseSessionService } from '../../services/firebase-session.service';
 
 @Component({
   selector: 'app-profile',
@@ -17,6 +18,16 @@ import { USERNAME_SUGGESTIONS } from '../../data/mock-data';
 export class ProfileComponent {
   private router = inject(Router);
   readonly state = inject(AppStateService);
+  private fb = inject(FirebaseSessionService);
+
+  codeCopied = signal(false);
+
+  copyFriendCode(): void {
+    navigator.clipboard?.writeText(this.state.friendCode).then(() => {
+      this.codeCopied.set(true);
+      setTimeout(() => this.codeCopied.set(false), 2000);
+    });
+  }
 
   readonly allAvatars = [
     '🦦', '🐻', '🦊', '🐼', '🐨', '🐯', '🦁', '🐸',

@@ -374,53 +374,79 @@
     </div>
   </div>
 
-  <ion-modal [isOpen]="showInviteSheet()" (didDismiss)="showInviteSheet.set(false)" [initialBreakpoint]="0.5"
-    [breakpoints]="[0, 0.5, 0.75]" style="--background: #131A24;">
-    <ng-template>
+  <!-- ── Invite Sheet ────────────────────────────────────────── -->
+  <div class="sheet-overlay" *ngIf="showInviteSheet()" (click)="showInviteSheet.set(false)">
+    <div class="sheet-body" (click)="$event.stopPropagation()" style="max-height: 80vh; overflow-y: auto;">
+      <div class="sheet-handle"></div>
 
-      <div style="padding: 24px 20px 10px 20px;">
-        <h2 style="color: white; font-weight: 800; font-size: 20px; margin: 0;">Invite Friends</h2>
-      </div>
+      <h3 style="font-size:18px;font-weight:800;margin:0 0 4px;">Invite Friends</h3>
+      <p style="font-size:12px;color:var(--tx5);margin:0 0 18px;">Enter their friend code or share the room link</p>
 
-      <ion-content class="ion-padding" style="--background: transparent;">
+      <!-- ── Friend Code Entry ── -->
+      <div
+        style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px;margin-bottom:10px;">
+        <p
+          style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;">
+          By Friend Code</p>
 
-        <div *ngIf="state.knownFriends().length === 0"
-          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 15px; text-align: center;">
-          <div style="font-size: 34px;">👻</div>
-          <span style="color: white; font-weight: 800; font-size: 18px;">No friends yet</span>
-          <span style="color: rgba(255,255,255,0.5); font-weight: 500; font-size: 14px; line-height: 1.4;">
-            Invite people using the 6-digit room code or Share Link first.<br><br>
-            Once you swipe with them, they'll appear here forever!
-          </span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" [ngModel]="inviteCode()"
+            (ngModelChange)="inviteCode.set($event.toUpperCase()); inviteResult.set('idle')" placeholder="e.g. B7X4K"
+            maxlength="5" autocapitalize="characters" autocorrect="off" spellcheck="false"
+            style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 13px;color:white;font-size:17px;font-weight:800;letter-spacing:3px;font-family:monospace;text-transform:uppercase;outline:none;" />
+          <button (click)="lookupAndInvite()" [disabled]="inviteCode().length < 5 || inviteLooking()"
+            style="padding:11px 16px;border-radius:10px;background:#60A5FA;color:#0D1B2A;font-weight:800;font-size:13px;border:none;white-space:nowrap;transition:opacity 0.2s;"
+            [style.opacity]="(inviteCode().length < 5 || inviteLooking()) ? '0.4' : '1'">
+            <span *ngIf="inviteLooking()" class="spinner"
+              style="width:13px;height:13px;border-width:2px;border-color:#0D1B2A transparent #0D1B2A #0D1B2A;display:inline-block;"></span>
+            <span *ngIf="!inviteLooking()">Send →</span>
+          </button>
         </div>
 
-        <ion-list lines="none" style="background: transparent;" *ngIf="state.knownFriends().length > 0">
+        <div *ngIf="inviteResult() === 'sent'" style="margin-top:8px;color:#4ADE80;font-size:12px;font-weight:600;">
+          ✓ Invite sent! They'll get a notification.
+        </div>
+        <div *ngIf="inviteResult() === 'not_found'"
+          style="margin-top:8px;color:#F87171;font-size:12px;font-weight:600;">
+          ✕ No user found with that code. Double-check it.
+        </div>
+        <div *ngIf="inviteResult() === 'self'"
+          style="margin-top:8px;color:rgba(255,255,255,0.4);font-size:12px;font-weight:500;">
+          That's your own code 😄
+        </div>
 
-          <ion-item *ngFor="let u of state.knownFriends()" (click)="sendInvite(u)" button detail="false"
-            style="--background: rgba(255,255,255,0.03); --border-radius: 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05);">
+        <p style="color:rgba(255,255,255,0.3);font-size:11px;margin:10px 0 0;">Friends find their code on their Profile
+          tab</p>
+      </div>
 
-            <ion-avatar slot="start"
-              style="background: rgba(96, 165, 250, 0.15); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(96, 165, 250, 0.3);">
-              <span style="color: #60A5FA; font-weight: 800; font-size: 16px;">{{ (u.username[0] || 'F') | uppercase
-                }}</span>
-            </ion-avatar>
+      <!-- ── Share Room Link ── -->
+      <div
+        style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px;">
+        <p
+          style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;">
+          Room Link</p>
 
-            <ion-label>
-              <h2 style="color: white; font-weight: 700; font-size: 16px; margin-bottom: 2px;">{{ u.username }}</h2>
-              <p style="color: rgba(255,255,255,0.4); font-size: 12px; font-weight: 500;">Tap to send invite</p>
-            </ion-label>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:9px 11px;margin-bottom:10px;">
+          <span style="color:rgba(255,255,255,0.45);font-size:11px;font-family:monospace;">tastebuddyv2.web.app/join/{{
+            roomCode() }}</span>
+        </div>
 
-            <svg slot="end" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
+        <div style="display:flex;gap:8px;">
+          <button (click)="copyRoomLink()"
+            style="flex:1;padding:10px;border-radius:10px;border:1px solid;font-weight:700;font-size:12px;transition:all 0.2s;"
+            [style.borderColor]="roomLinkCopied() ? 'rgba(74,222,128,0.5)' : 'rgba(255,255,255,0.12)'"
+            [style.background]="roomLinkCopied() ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)'"
+            [style.color]="roomLinkCopied() ? '#4ADE80' : 'rgba(255,255,255,0.7)'">
+            {{ roomLinkCopied() ? '✓ Copied!' : '📋 Copy Link' }}
+          </button>
+          <button (click)="shareRoomLink()"
+            style="flex:1;padding:10px;border-radius:10px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);color:#60A5FA;font-weight:700;font-size:12px;">
+            🔗 Share
+          </button>
+        </div>
+      </div>
 
-          </ion-item>
-        </ion-list>
-
-      </ion-content>
-    </ng-template>
-  </ion-modal>
+    </div>
+  </div>
 
 </div>

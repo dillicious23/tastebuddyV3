@@ -141,6 +141,7 @@ export class YelpService {
                     price: b.price || '$$',
                     rating: b.rating,
                     imageUrl: b.image_url,
+                    address: b.location?.display_address ? b.location.display_address.join(', ') : '',
                     lat: b.coordinates.latitude,
                     lng: b.coordinates.longitude,
                     yelpUrl: b.url,

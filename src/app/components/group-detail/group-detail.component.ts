@@ -6,7 +6,8 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
-import { ForkupGroup } from '../../models/restaurant.model';
+import { ForkupGroup, Restaurant } from '../../models/restaurant.model';
+import { openNativeMap } from '../../utils/maps';
 
 @Component({
   selector: 'app-group-detail',
@@ -53,9 +54,9 @@ import { ForkupGroup } from '../../models/restaurant.model';
         Delete group history
       </button>
 
-      <div *ngFor="let s of group.sessions" class="session-row ghost-card br-md">
+      <div *ngFor="let s of group.sessions; let i = index" class="session-row ghost-card br-md">
         
-        <div class="session-top" (click)="toggleSession(s.roomCode)" style="cursor: pointer; margin-bottom: 0;">
+        <div class="session-top" (click)="toggleSession(i)" style="cursor: pointer; margin-bottom: 0;">
           <div style="display:flex; flex-direction:column; gap:2px;">
             <span style="font-size:13px;font-weight:700;color:var(--tx1)">{{ s.timeAgo }}</span>
             <span style="font-size:10px;color:var(--tx5)">
@@ -64,13 +65,13 @@ import { ForkupGroup } from '../../models/restaurant.model';
               <span *ngIf="!s.matches.length">0 Likes</span>
             </span>
           </div>
-          <svg [style.transform]="expandedSession() === s.roomCode ? 'rotate(180deg)' : 'rotate(0deg)'" 
+          <svg [style.transform]="expandedSession() === i ? 'rotate(180deg)' : 'rotate(0deg)'" 
                width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;">
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </div>
 
-        <div *ngIf="expandedSession() === s.roomCode" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
+        <div *ngIf="expandedSession() === i" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
           
           <ng-container *ngIf="s.matches.length > 0">
             <div *ngFor="let match of s.matches" class="session-match" style="margin-bottom: 10px;">
@@ -145,7 +146,7 @@ export class GroupDetailComponent implements OnInit {
   group: ForkupGroup | null = null;
   
   // 💥 NEW: Track which session is currently expanded
-  expandedSession = signal<string | null>(null);
+  expandedSession = signal<number | null>(null);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -153,17 +154,16 @@ export class GroupDetailComponent implements OnInit {
   }
 
   // 💥 NEW: Toggle the accordion open and closed
-  toggleSession(roomCode: string): void {
-    if (this.expandedSession() === roomCode) {
+  toggleSession(index: number): void {
+    if (this.expandedSession() === index) {
       this.expandedSession.set(null); // Close it if it's already open
     } else {
-      this.expandedSession.set(roomCode); // Open the new one
+      this.expandedSession.set(index); // Open the new one
     }
   }
 
-  openMap(restaurant: any): void {
-    const url = `https://maps.google.com/?q=$${restaurant.lat},${restaurant.lng}`;
-    window.open(url, '_system');
+  openMap(restaurant: Restaurant): void {
+    openNativeMap(restaurant);
   }
 
   doDelete(): void {

@@ -4,6 +4,7 @@ import {
   ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
@@ -17,7 +18,7 @@ type SwipeDir = 'left' | 'right' | null;
 @Component({
   selector: 'app-swipe',
   standalone: true,
-  imports: [CommonModule, IonicModule, CardContentComponent],
+  imports: [CommonModule, FormsModule, IonicModule, CardContentComponent],
   templateUrl: './swipe.component.html',
   styleUrls: ['./swipe.component.scss'],
 })
@@ -27,52 +28,74 @@ export class SwipeComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FirebaseSessionService);
 
-  // 💥 NEW: Invite Sheet State
+  // ── Invite Sheet ─────────────────────────────────────────
   showInviteSheet = signal(false);
-  availableUsers = signal<any[]>([]);
-  loadingUsers = signal(false);
-  isInviting = signal(false);
+  inviteCode = signal('');
+  inviteLooking = signal(false);   // spinner while querying Firestore
+  inviteResult = signal<'idle' | 'sent' | 'not_found' | 'self'>('idle');
+  roomLinkCopied = signal(false);
 
-  async openInviteSheet() {
+  openInviteSheet(): void {
+    this.inviteCode.set('');
+    this.inviteResult.set('idle');
     this.showInviteSheet.set(true);
-    this.loadingUsers.set(true);
+  }
+
+  async lookupAndInvite(): Promise<void> {
+    const code = this.inviteCode().toUpperCase().trim();
+    if (code.length < 5) return;
+
+    this.inviteLooking.set(true);
+    this.inviteResult.set('idle');
 
     try {
-      const firestoreUsers = await this.fb.getAvailableUsers();
-      const knownFriends = this.state.knownFriends();
+      const user = await this.fb.getUserByFriendCode(code);
 
-      const mergedMap = new Map<string, any>();
-      for (const u of firestoreUsers) mergedMap.set(u.uid, u);
-      for (const f of knownFriends) {
-        if (f.uid && !mergedMap.has(f.uid)) mergedMap.set(f.uid, f);
+      if (!user) {
+        this.inviteResult.set('not_found');
+        return;
+      }
+      if (user.uid === this.state.myUid) {
+        this.inviteResult.set('self');
+        return;
       }
 
-      const inRoomUids = new Set(
-        this.state.activeMembers().map((m: any) => m.uid).filter(Boolean)
-      );
-
-      this.availableUsers.set(
-        Array.from(mergedMap.values()).filter(u => !inRoomUids.has(u.uid))
-      );
+      await this.fb.sendPushInvite(user.uid, this.state.username(), this.state.activeRoomCode());
+      this.inviteResult.set('sent');
+      this.inviteCode.set('');
     } catch (e) {
-      console.error('Failed to load users:', e);
-      this.availableUsers.set([]);
+      console.error('Invite failed:', e);
+      this.inviteResult.set('not_found');
     } finally {
-      this.loadingUsers.set(false);
+      this.inviteLooking.set(false);
     }
   }
 
-  async sendInvite(targetUser: any) {
-    this.isInviting.set(true);
+  async copyRoomLink(): Promise<void> {
+    const link = `https://tastebuddyv2.web.app/join/${this.state.activeRoomCode()}`;
+    await navigator.clipboard?.writeText(link);
+    this.roomLinkCopied.set(true);
+    setTimeout(() => this.roomLinkCopied.set(false), 2000);
+  }
+
+  async shareRoomLink(): Promise<void> {
     const code = this.state.activeRoomCode();
-    await this.fb.sendPushInvite(targetUser.uid, this.state.username(), code);
-    this.isInviting.set(false);
-    this.showInviteSheet.set(false);
+    const link = `https://tastebuddyv2.web.app/join/${code}`;
+    try {
+      await Share.share({
+        title: 'Join my TasteBuddy room!',
+        text: `Help me decide where to eat! Code: ${code}`,
+        url: link,
+      });
+    } catch {
+      await this.copyRoomLink();
+    }
   }
 
   // Card data — driven from Firebase via state.deck signal
   get deck(): Restaurant[] { return this.state.deck(); }
-  topIdx = signal(0);
+  // topIdx now lives in AppStateService so it survives navigation to /match and back
+  get topIdx() { return this.state.deckIndex; }
 
   // Drag state
   dragX = signal(0);
@@ -209,7 +232,7 @@ export class SwipeComponent implements OnInit, OnDestroy {
 
       const next = (this.topIdx() + 1) % this.deck.length;
 
-      this.topIdx.set(next);
+      this.state.deckIndex.set(next);
       this.dragX.set(0);
       this.dragY.set(0);
       this.cdr.detectChanges();
@@ -291,19 +314,19 @@ export class SwipeComponent implements OnInit, OnDestroy {
   // ── Out-of-cards options ──────────────────────────────────
   expandRadius(): void {
     this.outOfCards.set(false);
-    this.topIdx.set(0);
+    this.state.deckIndex.set(0);
     this.localLikes = 0; // Reset
   }
 
   lowerBar(): void {
     this.outOfCards.set(false);
-    this.topIdx.set(0);
+    this.state.deckIndex.set(0);
     this.localLikes = 0; // Reset
   }
 
   startOver(): void {
     this.outOfCards.set(false);
-    this.topIdx.set(0);
+    this.state.deckIndex.set(0);
     this.localLikes = 0; // Reset
   }
 

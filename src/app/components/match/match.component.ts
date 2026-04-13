@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { Restaurant } from '../../models/restaurant.model';
+import { openNativeMap } from '../../utils/maps';
 
 @Component({
   selector: 'app-match',
@@ -134,8 +135,7 @@ export class MatchComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     const m = this.match();
     if (m?.name) {
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.name)}`;
-      window.open(mapsUrl, '_blank');
+      openNativeMap(m);
     }
   }
 

@@ -12,6 +12,15 @@ function getOrCreateUid(): string {
   return uid;
 }
 function getStoredUsername(): string { return localStorage.getItem('tb_username') ?? ''; }
+function getOrCreateFriendCode(): string {
+  let code = localStorage.getItem('tb_friend_code');
+  if (!code) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O/0/1/I to avoid confusion
+    code = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    localStorage.setItem('tb_friend_code', code);
+  }
+  return code;
+}
 
 // ── Group history persistence ──────────
 const GROUPS_KEY = 'tb_groups';
@@ -39,6 +48,7 @@ export class AppStateService {
   private readonly fb = inject(FirebaseSessionService);
 
   readonly myUid = getOrCreateUid();
+  readonly friendCode = getOrCreateFriendCode();
   private _state = signal<AppState>({ ...BLANK_STATE });
 
   readonly state = this._state.asReadonly();
@@ -57,6 +67,7 @@ export class AppStateService {
   readonly lastFetchCuisines = signal<string>('');
 
   readonly deck = signal<Restaurant[]>([...RESTAURANTS]);
+  readonly deckIndex = signal<number>(0);   // persists across navigation
   readonly latestMatch = signal<Restaurant | null>(null);
 
   readonly isDataStale = computed(() => {
@@ -264,10 +275,11 @@ export class AppStateService {
       isWaiting: true,
       activeRoomCode: code,
       matchCount: 0,
-      activeMembers: [{ initial: s.username[0]?.toUpperCase() ?? 'U', colorIndex: 0, username: s.username }],
+      activeMembers: [{ uid: this.myUid, initial: s.username[0]?.toUpperCase() ?? 'U', colorIndex: 0, username: s.username }],
       isSolo: true
     }));
 
+    this.deckIndex.set(0); // fresh deck for the new session
     this.listenToRoom(code);
     return code;
   }
@@ -327,10 +339,18 @@ export class AppStateService {
     this._saveCurrentGroupToHistory(code ?? '', s.activeMembers, this.liveMatches());
 
     this.stopListening();
+    this.deckIndex.set(0); // reset for next session
     this._state.update(st => ({ ...st, hasActiveSession: false, isWaiting: false, activeRoomCode: '', matchCount: 0, activeMembers: [], isSolo: true }));
   }
 
-  setUsername(name: string): void { localStorage.setItem('tb_username', name); this._state.update(s => ({ ...s, username: name })); }
+  setUsername(name: string): void {
+    localStorage.setItem('tb_username', name);
+    this._state.update(s => ({ ...s, username: name }));
+    // Keep the Firestore users doc in sync with the latest username
+    this.fb.upsertUserProfile(this.myUid, name).catch(err =>
+      console.warn('Could not sync username to Firestore:', err)
+    );
+  }
   setSearchRadius(radius: number): void { this._state.update(s => ({ ...s, searchRadius: radius })); }
   addMatch(): void { this._state.update(s => ({ ...s, matchCount: s.matchCount + 1 })); }
   friendJoined(member: GroupMember): void { this._state.update(s => ({ ...s, isSolo: false, activeMembers: [...s.activeMembers, member] })); }

@@ -1,4 +1,4 @@
-import { Component, inject, signal, Output, EventEmitter, OnDestroy, OnInit } from '@angular/core'; import { CommonModule } from '@angular/common';
+import { Component, inject, signal, Output, EventEmitter, OnDestroy, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Geolocation } from '@capacitor/geolocation';
 import { FirebaseSessionService } from 'src/app/services/firebase-session.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-home',
@@ -22,8 +23,10 @@ import { FirebaseSessionService } from 'src/app/services/firebase-session.servic
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
+  private zone = inject(NgZone);
   readonly state = inject(AppStateService);
   private yelp = inject(YelpService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Output() start = new EventEmitter<any[]>();
 
@@ -44,9 +47,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   selectedRestaurant = signal<any | null>(null);
 
   showInviteSheet = signal(false);
-  availableUsers = signal<any[]>([]);
-  loadingUsers = signal(false);
-  isInviting = signal(false);
+  inviteCode = signal('');
+  inviteLooking = signal(false);
+  inviteResult = signal<'idle' | 'sent' | 'not_found' | 'self'>('idle');
+  roomLinkCopied = signal(false);
 
   constructor() {
     this._animatePulse();
@@ -328,55 +332,47 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Actions
 
 
-  async openInviteSheet() {
+  openInviteSheet(): void {
+    this.inviteCode.set('');
+    this.inviteResult.set('idle');
     this.showInviteSheet.set(true);
-    this.loadingUsers.set(true);
+  }
 
+  async lookupAndInvite(): Promise<void> {
+    const code = this.inviteCode().toUpperCase().trim();
+    if (code.length < 5) return;
+    this.inviteLooking.set(true);
+    this.inviteResult.set('idle');
     try {
-      // Fetch all registered users from Firestore (they have FCM tokens)
-      const firestoreUsers = await this.fb.getAvailableUsers();
-
-      // Also pull in knownFriends from local history as a fallback
-      const knownFriends = this.state.knownFriends();
-
-      // Merge both lists, Firestore users take priority (they have fcmToken)
-      const mergedMap = new Map<string, any>();
-      for (const u of firestoreUsers) {
-        mergedMap.set(u.uid, u);
-      }
-      for (const f of knownFriends) {
-        if (f.uid && !mergedMap.has(f.uid)) {
-          mergedMap.set(f.uid, f);
-        }
-      }
-
-      // Exclude people already in the active room
-      const inRoomUids = new Set(
-        this.state.activeMembers().map(m => m.uid).filter(Boolean)
-      );
-
-      this.availableUsers.set(
-        Array.from(mergedMap.values()).filter(u => !inRoomUids.has(u.uid))
-      );
+      const user = await this.fb.getUserByFriendCode(code);
+      if (!user) { this.inviteResult.set('not_found'); return; }
+      if (user.uid === this.state.myUid) { this.inviteResult.set('self'); return; }
+      await this.fb.sendPushInvite(user.uid, this.state.username(), this.state.activeRoomCode());
+      this.inviteResult.set('sent');
+      this.inviteCode.set('');
     } catch (e) {
-      console.error('Failed to load users:', e);
-      this.availableUsers.set([]);
+      console.error('Invite failed:', e);
+      this.inviteResult.set('not_found');
     } finally {
-      this.loadingUsers.set(false);
+      this.inviteLooking.set(false);
     }
   }
 
-  async sendInvite(targetUser: any) {
-    this.isInviting.set(true);
+  async copyRoomLink(): Promise<void> {
+    const link = `https://tastebuddyv2.web.app/join/${this.state.activeRoomCode()}`;
+    await navigator.clipboard?.writeText(link);
+    this.roomLinkCopied.set(true);
+    setTimeout(() => this.roomLinkCopied.set(false), 2000);
+  }
+
+  async shareRoomLink(): Promise<void> {
     const code = this.state.activeRoomCode();
-
-    // Call the Mailman!
-    await this.fb.sendPushInvite(targetUser.uid, this.state.username(), code);
-
-    this.isInviting.set(false);
-    this.showInviteSheet.set(false);
-
-    alert(`Invite sent to ${targetUser.username}!`);
+    const link = `https://tastebuddyv2.web.app/join/${code}`;
+    try {
+      await Share.share({ title: 'Join my TasteBuddy room!', text: `Help me decide where to eat! Code: ${code}`, url: link });
+    } catch {
+      await this.copyRoomLink();
+    }
   }
 
   async startSession() {

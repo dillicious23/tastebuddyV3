@@ -73,8 +73,33 @@
 
   </div>
 
-  <!-- ── Preferences list ───────────────────────────────────── -->
+  <!-- ── Friend Code Card ──────────────────────────────────── -->
   <div class="prefs-scroll scroll-area">
+
+    <p class="section-header">Your Friend Code</p>
+
+    <div class="pref-group ghost-card br-md" style="padding: 16px; display: flex; align-items: center; gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #60A5FA; font-family: monospace;">
+            {{ state.friendCode }}
+          </span>
+        </div>
+        <span style="font-size: 11px; color: var(--tx5); font-weight: 500;">
+          Share this with friends so they can invite you to sessions
+        </span>
+      </div>
+      <button (click)="copyFriendCode()"
+        style="flex-shrink: 0; padding: 8px 14px; border-radius: 10px; border: 1px solid; font-size: 12px; font-weight: 700; transition: all 0.2s;"
+        [style.borderColor]="codeCopied() ? 'rgba(74,222,128,0.5)' : 'rgba(96,165,250,0.3)'"
+        [style.background]="codeCopied() ? 'rgba(74,222,128,0.12)' : 'rgba(96,165,250,0.08)'"
+        [style.color]="codeCopied() ? '#4ADE80' : '#60A5FA'">
+        <span *ngIf="!codeCopied()">Copy</span>
+        <span *ngIf="codeCopied()">✓ Copied</span>
+      </button>
+    </div>
+
+  <!-- ── Preferences list ───────────────────────────────────── -->
 
     <p class="section-header">Preferences</p>
 

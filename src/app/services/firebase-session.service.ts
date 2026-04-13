@@ -7,6 +7,7 @@ import {
   onSnapshot, Unsubscribe, serverTimestamp, Timestamp, addDoc,
   query,
   limit,
+  where,
 } from 'firebase/firestore';
 import { Observable } from 'rxjs';
 import { db } from '../core/firebase';
@@ -88,9 +89,9 @@ export class FirebaseSessionService {
 
     const myUid = localStorage.getItem('tb_uid');
 
-    // Return everyone EXCEPT yourself
+    // Merge the document ID as the uid field (doc.data() doesn't include it)
     return snap.docs
-      .map(d => d.data())
+      .map(d => ({ uid: d.id, ...d.data() }))
       .filter(u => u['uid'] !== myUid);
   }
 
@@ -209,6 +210,30 @@ export class FirebaseSessionService {
       roomCode: roomCode,
       timestamp: Date.now()
     });
+  }
+
+  // ── Look up a user by their friend code ──────────────
+  async getUserByFriendCode(friendCode: string): Promise<any | null> {
+    const q = query(
+      collection(db, 'users'),
+      where('friendCode', '==', friendCode.toUpperCase().trim()),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { uid: d.id, ...d.data() };
+  }
+
+  // ── Upsert user profile in 'users' collection ───────────────
+  async upsertUserProfile(uid: string, username: string, avatar?: string, friendCode?: string): Promise<void> {
+    await setDoc(doc(db, 'users', uid), {
+      uid,
+      username,
+      avatar: avatar ?? localStorage.getItem('userAvatar') ?? '🦦',
+      friendCode: friendCode ?? localStorage.getItem('tb_friend_code') ?? '',
+      lastActive: Date.now()
+    }, { merge: true });
   }
 
 }

@@ -40,11 +40,22 @@
 
     <!-- Groups -->
     <button class="nav-item" [class.active-purple]="activeTab === 'groups'" (click)="navigate('groups')">
-      <svg width="22" height="22" viewBox="0 0 22 22">
-        <path
-          d="M4 14C4 11 6.7 9 11 9C15.3 9 18 11 18 14V15H4V14ZM11 3C8.8 3 7 4.8 7 7S8.8 11 11 11 15 9.2 15 7 13.2 3 11 3Z"
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Back person -->
+        <circle cx="7.5" cy="8" r="2.5"
+          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
+          stroke-width="1.5" />
+        <path d="M2 17C2 14.5 4.5 13 7.5 13"
+          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
+          stroke-width="1.5" stroke-linecap="round" />
+        <!-- Front person -->
+        <circle cx="14" cy="7.5" r="3"
           [attr.fill]="activeTab === 'groups' ? '#A78BFA' : 'none'"
-          [attr.stroke]="activeTab === 'groups' ? 'none' : '#1A2232'" stroke-width="1.5" />
+          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
+          stroke-width="1.5" />
+        <path d="M7 19C7 16.2 10 14.5 14 14.5C18 14.5 21 16.2 21 19"
+          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
+          stroke-width="1.5" stroke-linecap="round" />
       </svg>
       <span>Groups</span>
     </button>

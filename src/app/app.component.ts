@@ -78,11 +78,18 @@ export class AppComponent implements OnInit {
     }
     const myUsername = localStorage.getItem('tb_username') || 'Someone';
 
-    await setDoc(doc(db, 'users', myUid), {
-      uid: myUid,
-      username: myUsername,
-      lastActive: Date.now()
-    }, { merge: true });
+    // Only upsert if user has already completed the launch screen (has a real username)
+    if (myUsername && myUsername !== 'Someone') {
+      const myAvatar = localStorage.getItem('userAvatar') ?? '🦦';
+      const myFriendCode = localStorage.getItem('tb_friend_code') ?? '';
+      await setDoc(doc(db, 'users', myUid), {
+        uid: myUid,
+        username: myUsername,
+        avatar: myAvatar,
+        friendCode: myFriendCode,
+        lastActive: Date.now()
+      }, { merge: true });
+    }
 
     // FCM token + push listeners only work on native device
     if (!Capacitor.isNativePlatform()) return;
