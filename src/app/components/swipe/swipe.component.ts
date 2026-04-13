@@ -23,18 +23,43 @@ type SwipeDir = 'left' | 'right' | null;
 })
 export class SwipeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
-  private state = inject(AppStateService);
+  public state = inject(AppStateService);
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FirebaseSessionService);
 
   // 💥 NEW: Invite Sheet State
   showInviteSheet = signal(false);
-  availableUsers = this.state.knownFriends;
+  availableUsers = signal<any[]>([]);
+  loadingUsers = signal(false);
   isInviting = signal(false);
 
-  openInviteSheet() {
+  async openInviteSheet() {
     this.showInviteSheet.set(true);
-    // No more Firebase fetching needed! The sheet opens instantly.
+    this.loadingUsers.set(true);
+
+    try {
+      const firestoreUsers = await this.fb.getAvailableUsers();
+      const knownFriends = this.state.knownFriends();
+
+      const mergedMap = new Map<string, any>();
+      for (const u of firestoreUsers) mergedMap.set(u.uid, u);
+      for (const f of knownFriends) {
+        if (f.uid && !mergedMap.has(f.uid)) mergedMap.set(f.uid, f);
+      }
+
+      const inRoomUids = new Set(
+        this.state.activeMembers().map((m: any) => m.uid).filter(Boolean)
+      );
+
+      this.availableUsers.set(
+        Array.from(mergedMap.values()).filter(u => !inRoomUids.has(u.uid))
+      );
+    } catch (e) {
+      console.error('Failed to load users:', e);
+      this.availableUsers.set([]);
+    } finally {
+      this.loadingUsers.set(false);
+    }
   }
 
   async sendInvite(targetUser: any) {

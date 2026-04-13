@@ -266,7 +266,15 @@
       </div>
       <ion-content class="ion-padding" style="--background: transparent;">
 
-        <div *ngIf="availableUsers().length === 0"
+        <!-- Loading state -->
+        <div *ngIf="loadingUsers()"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 12px;">
+          <ion-spinner name="crescent" style="width: 28px; height: 28px; color: #60A5FA;"></ion-spinner>
+          <span style="color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 500;">Finding friends...</span>
+        </div>
+
+        <!-- Empty state (only show after load completes) -->
+        <div *ngIf="!loadingUsers() && availableUsers().length === 0"
           style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 15px; text-align: center;">
           <div style="font-size: 34px;">👻</div>
           <span style="color: white; font-weight: 800; font-size: 18px;">No friends yet</span>
@@ -276,7 +284,8 @@
           </span>
         </div>
 
-        <ion-list lines="none" style="background: transparent;">
+        <!-- User list -->
+        <ion-list *ngIf="!loadingUsers() && availableUsers().length > 0" lines="none" style="background: transparent;">
           <ion-item *ngFor="let u of availableUsers()" (click)="sendInvite(u)" button detail="false"
             style="--background: rgba(255,255,255,0.03); --border-radius: 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05);">
 
@@ -290,8 +299,10 @@
               <p style="color: rgba(255,255,255,0.4); font-size: 12px; font-weight: 500;">Tap to send invite</p>
             </ion-label>
 
-            <svg slot="end" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
+            <ion-spinner *ngIf="isInviting()" slot="end" name="crescent"
+              style="width: 20px; height: 20px; color: #60A5FA;"></ion-spinner>
+            <svg *ngIf="!isInviting()" slot="end" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>

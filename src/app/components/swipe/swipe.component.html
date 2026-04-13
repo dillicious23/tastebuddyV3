@@ -377,12 +377,14 @@
   <ion-modal [isOpen]="showInviteSheet()" (didDismiss)="showInviteSheet.set(false)" [initialBreakpoint]="0.5"
     [breakpoints]="[0, 0.5, 0.75]" style="--background: #131A24;">
     <ng-template>
+
       <div style="padding: 24px 20px 10px 20px;">
         <h2 style="color: white; font-weight: 800; font-size: 20px; margin: 0;">Invite Friends</h2>
       </div>
+
       <ion-content class="ion-padding" style="--background: transparent;">
 
-        <div *ngIf="availableUsers().length === 0"
+        <div *ngIf="state.knownFriends().length === 0"
           style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 15px; text-align: center;">
           <div style="font-size: 34px;">👻</div>
           <span style="color: white; font-weight: 800; font-size: 18px;">No friends yet</span>
@@ -392,13 +394,15 @@
           </span>
         </div>
 
-        <ion-list lines="none" style="background: transparent;">
-          <ion-item *ngFor="let u of availableUsers()" (click)="sendInvite(u)" button detail="false"
+        <ion-list lines="none" style="background: transparent;" *ngIf="state.knownFriends().length > 0">
+
+          <ion-item *ngFor="let u of state.knownFriends()" (click)="sendInvite(u)" button detail="false"
             style="--background: rgba(255,255,255,0.03); --border-radius: 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05);">
 
             <ion-avatar slot="start"
               style="background: rgba(96, 165, 250, 0.15); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(96, 165, 250, 0.3);">
-              <span style="color: #60A5FA; font-weight: 800; font-size: 16px;">{{ u.username[0] | uppercase }}</span>
+              <span style="color: #60A5FA; font-weight: 800; font-size: 16px;">{{ (u.username[0] || 'F') | uppercase
+                }}</span>
             </ion-avatar>
 
             <ion-label>

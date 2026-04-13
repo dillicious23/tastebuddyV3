@@ -86,21 +86,38 @@ export class AppStateService {
   readonly partialMatches = signal<SessionMatch[]>([]);
 
   // 💥 NEW: Automatically extract a unique list of friends from your past sessions
+  // 💥 NEW: Automatically extract a unique list of friends from your past sessions
   readonly knownFriends = computed(() => {
     const friendsMap = new Map<string, GroupMember>();
+    const allGroups = this.groups();
+
+    console.log("=== KNOWN FRIENDS DEBUG ===");
+    console.log("1. Total Past Groups in History:", allGroups.length);
+    console.log("2. My Device UID:", this.myUid);
 
     // Loop through all your past groups
-    for (const group of this.groups()) {
+    for (const group of allGroups) {
+      console.log(`3. Checking Group [${group.id}]:`, group.members);
+
       for (const m of group.members) {
+        console.log(`   -> Evaluating Member: ${m.username} | UID: ${m.uid}`);
+
         // Don't add yourself, and ensure they have a UID recorded
-        if (m.uid && m.uid !== this.myUid) {
+        if (!m.uid) {
+          console.log(`   ❌ Skipped ${m.username}: They have no UID saved in history.`);
+        } else if (m.uid === this.myUid) {
+          console.log(`   ❌ Skipped ${m.username}: This is you!`);
+        } else {
           friendsMap.set(m.uid, m);
+          console.log(`   ✅ SUCCESS: Added ${m.username} to invite list!`);
         }
       }
     }
 
-    // Return them sorted alphabetically by username
-    return Array.from(friendsMap.values()).sort((a, b) => a.username.localeCompare(b.username));
+    const finalArray = Array.from(friendsMap.values()).sort((a, b) => a.username.localeCompare(b.username));
+    console.log("4. Final Invite List Array:", finalArray);
+
+    return finalArray;
   });
 
   private _seenMatchIds = new Set<string>();

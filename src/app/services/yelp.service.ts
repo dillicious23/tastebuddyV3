@@ -2,14 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Restaurant } from '../models/restaurant.model';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 @Injectable({ providedIn: 'root' })
 export class YelpService {
     private http = inject(HttpClient);
-
-    // The cors-anywhere proxy prevents browser blocks during local testing.
-    // private baseUrl = 'https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search';
 
     // Your actual Yelp API Key
     private apiKey = 'BcGuIBO_29gP4DdK-1IHudB0S9CRw3WZUtwfxXCaMBOkGePM706cRTrUZVx6NWH-45LRox0LPhr1wb-e2SJOx2QjP4_2Id29SOmtlGaTsKxwnrxrpci9drKjCQ1pZXYx';
@@ -18,7 +15,6 @@ export class YelpService {
         const yelpDirectUrl = 'https://api.yelp.com/v3/businesses/search';
 
         // If we are on a real iOS or Android device, talk to Yelp directly!
-        // (CapacitorHttp will automatically bypass the CORS block)
         if (Capacitor.isNativePlatform()) {
             return yelpDirectUrl;
         }
@@ -45,7 +41,6 @@ export class YelpService {
         return { emoji: '🍽️', color: '#64748B', bg: 'linear-gradient(135deg, #64748B, #0F172A)' };
     }
 
-    // 💥 FIX 2: Safely inside the class now
     private getExactDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
         const R = 6371000; // Radius of the Earth in meters
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -56,24 +51,17 @@ export class YelpService {
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    // 💥 FIX 1: Accepts a string OR a string array
     async getRestaurants(
         lat: number | null,
         lng: number | null,
         radiusMiles: number,
         cuisines?: string | string[],
-        openNow: boolean = false,            // 💥 NEW
-        price: string[] = ['1', '2', '3', '4'], // 💥 NEW
+        openNow: boolean = false,
+        price: string[] = ['1', '2', '3', '4'],
         location?: string
     ): Promise<Restaurant[]> {
-        const headers = new HttpHeaders({
-            Authorization: `Bearer ${this.apiKey}`,
-            accept: 'application/json'
-        });
-
         const radiusMeters = Math.min(Math.floor(radiusMiles * 1609.34), 40000);
 
-        // 💥 FIX: Build the correct categories string
         let catQuery = '';
         if (cuisines && cuisines.length > 0 && !cuisines.includes('all')) {
             catQuery = Array.isArray(cuisines) ? cuisines.join(',') : cuisines;
@@ -81,19 +69,16 @@ export class YelpService {
 
         let url = `${this.baseUrl}?radius=${radiusMeters}&limit=50&sort_by=distance`;
 
-        // 💥 FIX: Use 'categories' instead of 'term'
         if (catQuery) {
             url += `&categories=${encodeURIComponent(catQuery)}`;
         } else {
             url += `&categories=restaurants`; // Fallback so we don't get dentists
         }
 
-        // 💥 NEW: Append Open Now
         if (openNow) {
             url += `&open_now=true`;
         }
 
-        // 💥 NEW: Append Price
         if (price && price.length > 0) {
             url += `&price=${price.join(',')}`;
         }
@@ -104,44 +89,72 @@ export class YelpService {
             url += `&latitude=${lat}&longitude=${lng}`;
         }
 
-        const response: any = await firstValueFrom(this.http.get(url, { headers }));
+        try {
+            let responseData: any;
 
-        const strictBusinesses = response.businesses.filter((b: any) => {
-            if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
+            // Completely bypass Angular HttpClient on native devices
+            if (Capacitor.isNativePlatform()) {
+                const options = {
+                    url: url,
+                    headers: {
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'Accept': 'application/json'
+                    }
+                };
+                const nativeResponse = await CapacitorHttp.get(options);
+                responseData = nativeResponse.data;
+            } else {
+                // Use Angular HttpClient for the local proxy
+                const headers = new HttpHeaders({
+                    Authorization: `Bearer ${this.apiKey}`,
+                    accept: 'application/json'
+                });
+                responseData = await firstValueFrom(this.http.get(url, { headers }));
+            }
 
-            // 💥 NEW: Filter out anything under 2.5 stars!
-            if (!b.rating || b.rating < 2.5) return false;
+            // The Safety Net: Prevent the silent crash if Yelp rejects the request
+            if (!responseData || !responseData.businesses) {
+                console.error('Yelp rejected the request:', responseData);
+                return [];
+            }
 
-            // 💥 FIX: If this is a city search (no GPS coordinates), accept Yelp's default radius boundaries!
-            if (lat === null || lng === null) return true;
+            const strictBusinesses = responseData.businesses.filter((b: any) => {
+                if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
+                if (!b.rating || b.rating < 2.5) return false;
+                if (lat === null || lng === null) return true;
 
-            const exactMeters = this.getExactDistance(lat, lng, b.coordinates.latitude, b.coordinates.longitude);
-            return exactMeters <= radiusMeters;
-        });
+                const exactMeters = this.getExactDistance(lat, lng, b.coordinates.latitude, b.coordinates.longitude);
+                return exactMeters <= radiusMeters;
+            });
 
-        return strictBusinesses.map((b: any) => {
-            const hasReservations = b.transactions && b.transactions.includes('restaurant_reservation');
-            const visuals = this.getVisuals(b.categories || []);
+            return strictBusinesses.map((b: any) => {
+                const hasReservations = b.transactions && b.transactions.includes('restaurant_reservation');
+                const visuals = this.getVisuals(b.categories || []);
 
-            return {
-                id: b.id,
-                name: b.name,
-                cuisine: b.categories && b.categories.length > 0
-                    ? b.categories.map((c: any) => c.title).join(', ')
-                    : 'Food',
-                dist: (b.distance / 1609.34).toFixed(1) + ' mi',
-                price: b.price || '$$',
-                rating: b.rating,
-                imageUrl: b.image_url,
-                lat: b.coordinates.latitude,
-                lng: b.coordinates.longitude,
-                yelpUrl: b.url,
-                isOpenNow: !b.is_closed,
-                takesReservations: hasReservations,
-                emoji: visuals.emoji,
-                color: visuals.color,
-                bg: visuals.bg
-            };
-        });
+                return {
+                    id: b.id,
+                    name: b.name,
+                    cuisine: b.categories && b.categories.length > 0
+                        ? b.categories.map((c: any) => c.title).join(', ')
+                        : 'Food',
+                    dist: (b.distance / 1609.34).toFixed(1) + ' mi',
+                    price: b.price || '$$',
+                    rating: b.rating,
+                    imageUrl: b.image_url,
+                    lat: b.coordinates.latitude,
+                    lng: b.coordinates.longitude,
+                    yelpUrl: b.url,
+                    isOpenNow: !b.is_closed,
+                    takesReservations: hasReservations,
+                    emoji: visuals.emoji,
+                    color: visuals.color,
+                    bg: visuals.bg
+                };
+            });
+
+        } catch (error) {
+            console.error('Network or Proxy Error:', error);
+            return []; // Graceful failure so the app doesn't crash
+        }
     }
 }

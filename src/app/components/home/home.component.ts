@@ -44,7 +44,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   selectedRestaurant = signal<any | null>(null);
 
   showInviteSheet = signal(false);
-  availableUsers = this.state.knownFriends;
+  availableUsers = signal<any[]>([]);
+  loadingUsers = signal(false);
   isInviting = signal(false);
 
   constructor() {
@@ -327,9 +328,42 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Actions
 
 
-  openInviteSheet() {
+  async openInviteSheet() {
     this.showInviteSheet.set(true);
-    // No more Firebase fetching needed! The sheet opens instantly.
+    this.loadingUsers.set(true);
+
+    try {
+      // Fetch all registered users from Firestore (they have FCM tokens)
+      const firestoreUsers = await this.fb.getAvailableUsers();
+
+      // Also pull in knownFriends from local history as a fallback
+      const knownFriends = this.state.knownFriends();
+
+      // Merge both lists, Firestore users take priority (they have fcmToken)
+      const mergedMap = new Map<string, any>();
+      for (const u of firestoreUsers) {
+        mergedMap.set(u.uid, u);
+      }
+      for (const f of knownFriends) {
+        if (f.uid && !mergedMap.has(f.uid)) {
+          mergedMap.set(f.uid, f);
+        }
+      }
+
+      // Exclude people already in the active room
+      const inRoomUids = new Set(
+        this.state.activeMembers().map(m => m.uid).filter(Boolean)
+      );
+
+      this.availableUsers.set(
+        Array.from(mergedMap.values()).filter(u => !inRoomUids.has(u.uid))
+      );
+    } catch (e) {
+      console.error('Failed to load users:', e);
+      this.availableUsers.set([]);
+    } finally {
+      this.loadingUsers.set(false);
+    }
   }
 
   async sendInvite(targetUser: any) {

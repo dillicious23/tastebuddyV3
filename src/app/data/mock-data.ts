@@ -124,8 +124,12 @@ export const MEMBERS: GroupMember[] = [
 // ─────────────────────────────────────────────────────────────
 export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const t = Date.now();
-  return Array.from({ length: 4 }, (_, i) => chars[(t >> (i * 4)) % chars.length]).join('');
+  let result = '';
+  // Safely grab 4 random characters
+  for (let i = 0; i < 4; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 function daysAgo(n: number): Date {

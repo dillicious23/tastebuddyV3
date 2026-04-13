@@ -70,55 +70,47 @@ export class AppComponent implements OnInit {
   }
 
   async registerPushNotifications() {
+    // Always register this user in Firestore, even on web (just without an FCM token)
+    let myUid = localStorage.getItem('tb_uid');
+    if (!myUid) {
+      myUid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('tb_uid', myUid);
+    }
+    const myUsername = localStorage.getItem('tb_username') || 'Someone';
+
+    await setDoc(doc(db, 'users', myUid), {
+      uid: myUid,
+      username: myUsername,
+      lastActive: Date.now()
+    }, { merge: true });
+
+    // FCM token + push listeners only work on native device
     if (!Capacitor.isNativePlatform()) return;
 
     try {
       let permStatus = await FirebaseMessaging.checkPermissions();
-
       if (permStatus.receive === 'prompt') {
         permStatus = await FirebaseMessaging.requestPermissions();
       }
-
       if (permStatus.receive !== 'granted') {
         console.warn('Push permissions denied');
         return;
       }
 
-      // Register for Firebase Push
-      await FirebaseMessaging.getToken();
-
-      // Register for Firebase Push
       const token = await FirebaseMessaging.getToken();
 
-      let myUid = localStorage.getItem('tb_uid');
-      if (!myUid) {
-        myUid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-        localStorage.setItem('tb_uid', myUid);
-      }
-      const myUsername = localStorage.getItem('tb_username') || 'Someone';
-
-      // 💥 FIX: Changed token.value to token.token 💥
-      if (myUid && token.token) {
+      if (token.token) {
         await setDoc(doc(db, 'users', myUid), {
-          uid: myUid,
-          username: myUsername,
-          fcmToken: token.token,
-          lastActive: Date.now()
+          fcmToken: token.token
         }, { merge: true });
       }
 
-
-
-      // Listen for incoming messages
       FirebaseMessaging.addListener('notificationReceived', (event) => {
         console.log('Push received: ', event.notification);
       });
 
-      // 💥 NEW: Triggered when the user taps the push notification from their home screen
       FirebaseMessaging.addListener('notificationActionPerformed', (event: any) => {
         const data = event.notification.data;
-
-        // If the notification contains a room code, jump straight to the join screen!
         if (data && data['roomCode']) {
           this.zone.run(() => {
             this.router.navigate(['/join', data['roomCode']]);
