@@ -15,9 +15,11 @@ import { doc, setDoc } from 'firebase/firestore';
 })
 export class AppComponent implements OnInit {
 
+
   constructor(private router: Router, private zone: NgZone) {
     this.initializeApp();
   }
+
 
   async initializeApp() {
     // 1. Handle Background Resumes (App was minimized)
@@ -88,8 +90,11 @@ export class AppComponent implements OnInit {
       // Register for Firebase Push
       const token = await FirebaseMessaging.getToken();
 
-      // Save this user's token to the global address book!
-      const myUid = localStorage.getItem('tb_uid');
+      let myUid = localStorage.getItem('tb_uid');
+      if (!myUid) {
+        myUid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem('tb_uid', myUid);
+      }
       const myUsername = localStorage.getItem('tb_username') || 'Someone';
 
       // 💥 FIX: Changed token.value to token.token 💥

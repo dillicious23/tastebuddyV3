@@ -40,14 +40,9 @@ export class SwipeComponent implements OnInit, OnDestroy {
   async sendInvite(targetUser: any) {
     this.isInviting.set(true);
     const code = this.state.activeRoomCode();
-
-    // Call the Mailman!
     await this.fb.sendPushInvite(targetUser.uid, this.state.username(), code);
-
     this.isInviting.set(false);
     this.showInviteSheet.set(false);
-
-    alert(`Invite sent to ${targetUser.username}!`);
   }
 
   // Card data — driven from Firebase via state.deck signal

@@ -377,11 +377,9 @@
   <ion-modal [isOpen]="showInviteSheet()" (didDismiss)="showInviteSheet.set(false)" [initialBreakpoint]="0.5"
     [breakpoints]="[0, 0.5, 0.75]" style="--background: #131A24;">
     <ng-template>
-      <ion-header class="ion-no-border">
-        <ion-toolbar style="--background: transparent; padding-top: 10px;">
-          <ion-title style="color: white; font-weight: 800; font-size: 18px;">Invite Friends</ion-title>
-        </ion-toolbar>
-      </ion-header>
+      <div style="padding: 24px 20px 10px 20px;">
+        <h2 style="color: white; font-weight: 800; font-size: 20px; margin: 0;">Invite Friends</h2>
+      </div>
       <ion-content class="ion-padding" style="--background: transparent;">
 
         <div *ngIf="availableUsers().length === 0"

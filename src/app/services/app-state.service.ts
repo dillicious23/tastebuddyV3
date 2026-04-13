@@ -154,6 +154,9 @@ export class AppStateService {
     this._roomSub = this.fb.listenRoom$(code).subscribe(room => {
       if (!room) return;
 
+      const wasActive = this._state().hasActiveSession;
+      const isEnded = room.status === 'ended';
+
       const members = this._dbMembersToGroupMembers(room.members ?? {});
       const memberCount = Object.keys(room.members ?? {}).length;
 
@@ -201,8 +204,15 @@ export class AppStateService {
         isSolo: memberCount <= 1,
         matchCount: fullMatches.length,
         isWaiting: room.status === 'waiting',
-        hasActiveSession: room.status !== 'ended'
+        hasActiveSession: !isEnded // 💥 Switch to !isEnded
       }));
+
+      // 💥 NEW: If someone else ended the room, save it locally!
+      if (wasActive && isEnded) {
+        this._saveCurrentGroupToHistory(code, members, fullMatches);
+        this.stopListening();
+        this._state.update(st => ({ ...st, activeRoomCode: '', matchCount: 0, activeMembers: [], isSolo: true }));
+      }
     });
   }
 
@@ -297,6 +307,8 @@ export class AppStateService {
       this._state.update(st => ({ ...st, groups: updatedGroups }));
     }
 
+    this._saveCurrentGroupToHistory(code ?? '', s.activeMembers, this.liveMatches());
+
     this.stopListening();
     this._state.update(st => ({ ...st, hasActiveSession: false, isWaiting: false, activeRoomCode: '', matchCount: 0, activeMembers: [], isSolo: true }));
   }
@@ -306,6 +318,23 @@ export class AppStateService {
   addMatch(): void { this._state.update(s => ({ ...s, matchCount: s.matchCount + 1 })); }
   friendJoined(member: GroupMember): void { this._state.update(s => ({ ...s, isSolo: false, activeMembers: [...s.activeMembers, member] })); }
 
+  private _saveCurrentGroupToHistory(code: string, activeMembers: GroupMember[], liveMatches: SessionMatch[]) {
+    if (!code || activeMembers.length === 0) return;
+    const pastSession = { date: new Date(), roomCode: code, matches: liveMatches, timeAgo: 'just now' };
+    const usernameKey = activeMembers.map(m => m.username).sort().join(',');
+    const currentGroups = this._state().groups;
+    const existingIdx = currentGroups.findIndex(g => g.members.map(m => m.username).sort().join(',') === usernameKey);
+
+    let updatedGroups: ForkupGroup[];
+    if (existingIdx >= 0) {
+      updatedGroups = currentGroups.map((g, i) => i === existingIdx ? { ...g, isLive: false, sessions: [pastSession, ...g.sessions] } : g);
+    } else {
+      updatedGroups = [{ id: code, members: activeMembers, isLive: false, sessions: [pastSession] }, ...currentGroups];
+    }
+    saveGroups(updatedGroups);
+    this._state.update(st => ({ ...st, groups: updatedGroups }));
+  }
+
   private _dbMembersToGroupMembers(dbMembers: { [uid: string]: DbMember }): GroupMember[] {
     // 💥 FIX: Use Object.entries to grab the hidden UID key from the database object
     return Object.entries(dbMembers ?? {})
@@ -314,7 +343,8 @@ export class AppStateService {
         uid: uid, // Capture the push notification ID!
         initial: m.initial,
         colorIndex: m.colorIndex,
-        username: m.username
+        username: m.username,
+        avatar: m.avatar // 💥 CRITICAL: Bring the avatar across from Firebase!
       }));
   }
 }
