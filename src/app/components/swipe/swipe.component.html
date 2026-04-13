@@ -389,6 +389,18 @@
           style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;">
           By Friend Code</p>
 
+        <!-- 💥 NEW: Saved Friends Quick-Tap -->
+        <div *ngIf="state.savedFriends().length > 0" class="scroll-area" style="display:flex;gap:12px;margin-bottom:12px;padding-bottom:4px;white-space:nowrap;">
+          <div *ngFor="let friend of state.savedFriends()" 
+               (click)="inviteSavedFriend(friend)"
+               style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;">
+              {{ friend.avatar }}
+            </div>
+            <span style="font-size:10px;font-weight:600;color:var(--tx2);">{{ (friend.username.length > 7) ? (friend.username | slice:0:6) + '…' : friend.username }}</span>
+          </div>
+        </div>
+
         <div style="display:flex;gap:8px;align-items:center;">
           <input type="text" [ngModel]="inviteCode()"
             (ngModelChange)="inviteCode.set($event.toUpperCase()); inviteResult.set('idle')" placeholder="e.g. B7X4K"

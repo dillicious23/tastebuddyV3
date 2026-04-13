@@ -89,17 +89,17 @@
           Share this with friends so they can invite you to sessions
         </span>
       </div>
-      <button (click)="copyFriendCode()"
-        style="flex-shrink: 0; padding: 8px 14px; border-radius: 10px; border: 1px solid; font-size: 12px; font-weight: 700; transition: all 0.2s;"
+      <ion-button fill="clear" (click)="copyFriendCode()" style="flex-shrink: 0; padding: 8px 14px; border-radius: 10px; border: 1px solid; font-size: 12px; font-weight:
+        700; transition: all 0.2s;"
         [style.borderColor]="codeCopied() ? 'rgba(74,222,128,0.5)' : 'rgba(96,165,250,0.3)'"
         [style.background]="codeCopied() ? 'rgba(74,222,128,0.12)' : 'rgba(96,165,250,0.08)'"
         [style.color]="codeCopied() ? '#4ADE80' : '#60A5FA'">
         <span *ngIf="!codeCopied()">Copy</span>
         <span *ngIf="codeCopied()">✓ Copied</span>
-      </button>
+      </ion-button>
     </div>
 
-  <!-- ── Preferences list ───────────────────────────────────── -->
+    <!-- ── Preferences list ───────────────────────────────────── -->
 
     <p class="section-header">Preferences</p>
 

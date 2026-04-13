@@ -8,6 +8,7 @@ import {
   query,
   limit,
   where,
+  deleteField
 } from 'firebase/firestore';
 import { Observable } from 'rxjs';
 import { db } from '../core/firebase';
@@ -200,6 +201,13 @@ export class FirebaseSessionService {
   // ── End room ─────────────────────────────────────────────────
   async endRoom(code: string): Promise<void> {
     await updateDoc(doc(db, 'rooms', code), { status: 'ended' });
+  }
+
+  // ── Leave room (without ending it for others) ────────────────
+  async leaveRoom(code: string, uid: string): Promise<void> {
+    await updateDoc(doc(db, 'rooms', code), {
+      [`members.${uid}`]: deleteField()
+    });
   }
 
   // 💥 NEW: Drops a ticket in Firestore to trigger the push notification

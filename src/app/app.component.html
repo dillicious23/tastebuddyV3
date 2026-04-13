@@ -10,65 +10,54 @@
   <nav class="bottom-nav">
 
     <!-- Home -->
-    <button class="nav-item" [class.active-green]="activeTab === 'home'" (click)="navigate('home')">
+    <button class="nav-item" [class.active]="activeTab === 'home'" (click)="navigate('home')">
       <svg width="22" height="22" viewBox="0 0 22 22">
-        <path d="M3 10L11 3L19 10V19H14V14H8V19H3V10Z" [attr.fill]="activeTab === 'home' ? '#4ADE80' : 'none'"
-          [attr.stroke]="activeTab === 'home' ? 'none' : '#1A2232'" stroke-width="1.6" stroke-linejoin="round" />
+        <path d="M3 10L11 3L19 10V19H14V14H8V19H3V10Z" 
+          [attr.fill]="activeTab === 'home' ? '#4ADE80' : 'none'"
+          [attr.stroke]="activeTab === 'home' ? 'none' : '#475569'" 
+          stroke-width="1.6" stroke-linejoin="round" />
       </svg>
-      <span>Home</span>
+      <span [style.color]="activeTab === 'home' ? '#4ADE80' : '#475569'">Home</span>
     </button>
 
     <!-- Swipe (disabled when no session) -->
-    <button class="nav-item" [class.active-blue]="activeTab === 'swipe'" [class.nav-disabled]="swipeDisabled"
+    <button class="nav-item" [class.active]="activeTab === 'swipe'" [class.nav-disabled]="swipeDisabled"
       (click)="navigate('swipe')" [title]="swipeDisabled ? 'Start a session first' : ''">
-      <ng-container *ngIf="activeTab === 'swipe' && !swipeDisabled; else swipeOutline">
+      <ng-container *ngIf="activeTab === 'swipe'; else swipeOutline">
         <svg width="22" height="22" viewBox="0 0 22 22">
-          <rect x="4" y="4" width="14" height="14" rx="4" fill="#60A5FA" />
-          <path d="M8 11h6M13 8l3 3-3 3" stroke="#0B0F1A" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round" />
+          <rect x="4" y="4" width="14" height="14" rx="4" fill="#4ADE80" />
+          <path d="M8 11h6M13 8l3 3-3 3" stroke="#0B0F1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </ng-container>
       <ng-template #swipeOutline>
         <svg width="22" height="22" viewBox="0 0 22 22">
-          <rect x="4" y="4" width="14" height="14" rx="4" stroke="#1A2232" stroke-width="1.6" />
-          <path d="M8 11h6M13 8l3 3-3 3" stroke="#1A2232" stroke-width="1.6" stroke-linecap="round"
-            stroke-linejoin="round" />
+          <rect x="4" y="4" width="14" height="14" rx="4" stroke="#475569" stroke-width="1.6" fill="none" />
+          <path d="M8 11h6M13 8l3 3-3 3" stroke="#475569" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </ng-template>
-      <span>Swipe</span>
+      <span [style.color]="activeTab === 'swipe' ? '#4ADE80' : '#475569'">Swipe</span>
     </button>
 
     <!-- Groups -->
-    <button class="nav-item" [class.active-purple]="activeTab === 'groups'" (click)="navigate('groups')">
+    <button class="nav-item" [class.active]="activeTab === 'groups'" (click)="navigate('groups')">
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
         <!-- Back person -->
-        <circle cx="7.5" cy="8" r="2.5"
-          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
-          stroke-width="1.5" />
-        <path d="M2 17C2 14.5 4.5 13 7.5 13"
-          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
-          stroke-width="1.5" stroke-linecap="round" />
+        <circle cx="7.5" cy="8" r="2.5" [attr.stroke]="activeTab === 'groups' ? '#4ADE80' : '#475569'" stroke-width="1.6" />
+        <path d="M2 17C2 14.5 4.5 13 7.5 13" [attr.stroke]="activeTab === 'groups' ? '#4ADE80' : '#475569'" stroke-width="1.6" stroke-linecap="round" />
         <!-- Front person -->
-        <circle cx="14" cy="7.5" r="3"
-          [attr.fill]="activeTab === 'groups' ? '#A78BFA' : 'none'"
-          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
-          stroke-width="1.5" />
-        <path d="M7 19C7 16.2 10 14.5 14 14.5C18 14.5 21 16.2 21 19"
-          [attr.stroke]="activeTab === 'groups' ? '#A78BFA' : '#475569'"
-          stroke-width="1.5" stroke-linecap="round" />
+        <circle cx="14" cy="7.5" r="3" [attr.fill]="activeTab === 'groups' ? '#4ADE80' : 'none'" [attr.stroke]="activeTab === 'groups' ? '#4ADE80' : '#475569'" stroke-width="1.6" />
+        <path d="M7 19C7 16.2 10 14.5 14 14.5C18 14.5 21 16.2 21 19" [attr.stroke]="activeTab === 'groups' ? '#4ADE80' : '#475569'" stroke-width="1.6" stroke-linecap="round" />
       </svg>
-      <span>Groups</span>
+      <span [style.color]="activeTab === 'groups' ? '#4ADE80' : '#475569'">Groups</span>
     </button>
 
     <!-- Profile -->
-    <button class="nav-item" [class.active-green]="activeTab === 'profile'" (click)="navigate('profile')">
+    <button class="nav-item" [class.active]="activeTab === 'profile'" (click)="navigate('profile')">
       <svg width="22" height="22" viewBox="0 0 22 22">
-        <circle cx="11" cy="8" r="3.5" [attr.fill]="activeTab === 'profile' ? '#4ADE80' : 'none'"
-          [attr.stroke]="activeTab === 'profile' ? 'none' : '#1A2232'" stroke-width="1.6" />
-        <path d="M4 18C4 15 7.1 13 11 13C14.9 13 18 15 18 18"
-          [attr.stroke]="activeTab === 'profile' ? '#4ADE80' : '#1A2232'" stroke-width="1.6" stroke-linecap="round" />
+        <circle cx="11" cy="8" r="3.5" [attr.fill]="activeTab === 'profile' ? '#4ADE80' : 'none'" [attr.stroke]="activeTab === 'profile' ? 'none' : '#475569'" stroke-width="1.6" />
+        <path d="M4 18C4 15 7.1 13 11 13C14.9 13 18 15 18 18" [attr.stroke]="activeTab === 'profile' ? '#4ADE80' : '#475569'" stroke-width="1.6" stroke-linecap="round" />
       </svg>
-      <span>Profile</span>
+      <span [style.color]="activeTab === 'profile' ? '#4ADE80' : '#475569'">Profile</span>
     </button>
 
   </nav>

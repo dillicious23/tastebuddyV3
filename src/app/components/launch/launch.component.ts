@@ -6,6 +6,8 @@ import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { RANDOM_USERNAMES } from '../../utils/usernames';
+import { ToastController } from '@ionic/angular';
+import { copyToClipboard } from '../../utils/clipboard';
 
 @Component({
   selector: 'app-launch',
@@ -76,6 +78,7 @@ import { RANDOM_USERNAMES } from '../../utils/usernames';
 export class LaunchComponent implements OnInit {
   private router = inject(Router);
   private stateService = inject(AppStateService);
+  private toastController = inject(ToastController);
 
   // 💥 NEW: Exact same list from your Profile component
   readonly allAvatars = [
@@ -90,6 +93,7 @@ export class LaunchComponent implements OnInit {
 
   // Holds the 3 randomly selected names currently showing in the chips
   displaySuggestions = signal<string[]>([]);
+  state: any;
 
   ngOnInit() {
     if (localStorage.getItem('tb_has_launched')) {
@@ -97,6 +101,30 @@ export class LaunchComponent implements OnInit {
     }
     this.refreshSuggestions();
   }
+
+  async copyRoomCode() {
+    const code = this.state.activeRoomCode();
+    if (!code) return;
+
+    try {
+      // 1. Copy to clipboard
+      const success = await copyToClipboard(code);
+      if (!success) return;
+
+      // 2. Show a success toast
+      const toast = await this.toastController.create({
+        message: 'Room Code copied to clipboard!',
+        duration: 2000,
+        cssClass: 'custom-toast',
+        position: 'top',
+        icon: 'checkmark-circle'
+      });
+      await toast.present();
+    } catch (e) {
+      console.error('Failed to copy room code', e);
+    }
+  }
+
 
   // 💥 NEW: Cycles through the avatar list on tap
   cycleAvatar(): void {

@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { GroupMember, ForkupGroup, AppState, Restaurant, SessionMatch } from '../models/restaurant.model';
+import { GroupMember, ForkupGroup, AppState, Restaurant, SessionMatch, SavedFriend } from '../models/restaurant.model';
 import { generateRoomCode, RESTAURANTS } from '../data/mock-data';
 import { FirebaseSessionService, DbMember } from './firebase-session.service';
 import { toYelpCategories } from '../components/preferences/preferences.component';
@@ -58,6 +58,9 @@ export class AppStateService {
   readonly activeMembers = computed(() => this._state().activeMembers);
   readonly matchCount = computed(() => this._state().matchCount);
   readonly isSolo = computed(() => this._state().isSolo);
+  // 💥 NEW: Persistent list of recent friends to invite
+  private readonly SAVED_FRIENDS_KEY = 'tb_saved_friends';
+  readonly savedFriends = signal<SavedFriend[]>(JSON.parse(localStorage.getItem(this.SAVED_FRIENDS_KEY) ?? '[]'));
   readonly isWaiting = computed(() => this._state().isWaiting ?? false);
   readonly groups = computed(() => this._state().groups);
   readonly searchRadius = computed(() => this._state().searchRadius);
@@ -182,8 +185,16 @@ export class AppStateService {
     this._roomSub = this.fb.listenRoom$(code).subscribe(room => {
       if (!room) return;
 
+      console.log('[ROOM SNAPSHOT]', {
+        status: room.status,
+        memberCount: Object.keys(room.members ?? {}).length,
+        memberUIDs: Object.keys(room.members ?? {}),
+        currentIsWaiting: this._state().isWaiting
+      });
+
       const wasActive = this._state().hasActiveSession;
       const isEnded = room.status === 'ended';
+      const isSwiping = room.status === 'swiping';
 
       const members = this._dbMembersToGroupMembers(room.members ?? {});
       const memberCount = Object.keys(room.members ?? {}).length;
@@ -215,27 +226,31 @@ export class AppStateService {
       const dbRestaurants = Object.values(room.restaurants ?? {});
 
       if (dbRestaurants.length > 0) {
-        // 💥 THE FIX: Object.values() shuffles randomly on every snapshot!
-        // We check if we already have these specific restaurants in our deck.
-        // If we do, we completely ignore the incoming array to keep the card order perfectly stable.
         const firstIncomingId = dbRestaurants[0].id;
         const alreadyLoaded = this.deck().some(r => r.id === firstIncomingId);
-
         if (!alreadyLoaded) {
           this.deck.set(dbRestaurants);
         }
       }
+
+      // 💥 KEY FIX: isWaiting can only become FALSE when the room status explicitly
+      // changes to 'swiping' or 'ended'. A member leaving (memberCount dropping)
+      // must NOT change the waiting state — only the host pressing Start can do that.
+      const currentIsWaiting = this._state().isWaiting;
+      const newIsWaiting = currentIsWaiting
+        ? !isSwiping && !isEnded   // If currently waiting, only un-wait when room goes swiping/ended
+        : false;                   // If already swiping, stay swiping regardless
 
       this._state.update(s => ({
         ...s,
         activeMembers: members,
         isSolo: memberCount <= 1,
         matchCount: fullMatches.length,
-        isWaiting: room.status === 'waiting',
-        hasActiveSession: !isEnded // 💥 Switch to !isEnded
+        isWaiting: newIsWaiting,
+        hasActiveSession: !isEnded
       }));
 
-      // 💥 NEW: If someone else ended the room, save it locally!
+      // If someone else ended the room, save it locally!
       if (wasActive && isEnded) {
         this._saveCurrentGroupToHistory(code, members, fullMatches);
         this.stopListening();
@@ -317,30 +332,37 @@ export class AppStateService {
     const s = this._state();
     const code = s.activeRoomCode;
 
-    if (code) { await this.fb.endRoom(code); }
-
-    // Save to history using actual liveMatches array!
+    // 1. Save the group history EXACTLY ONCE before wiping anything
     if (code && s.activeMembers.length > 0) {
-      const pastSession = { date: new Date(), roomCode: code, matches: this.liveMatches(), timeAgo: 'just now' };
-      const usernameKey = s.activeMembers.map(m => m.username).sort().join(',');
-      const currentGroups = this._state().groups;
-      const existingIdx = currentGroups.findIndex(g => g.members.map(m => m.username).sort().join(',') === usernameKey);
-
-      let updatedGroups: ForkupGroup[];
-      if (existingIdx >= 0) {
-        updatedGroups = currentGroups.map((g, i) => i === existingIdx ? { ...g, isLive: false, sessions: [pastSession, ...g.sessions] } : g);
-      } else {
-        updatedGroups = [{ id: code, members: s.activeMembers, isLive: false, sessions: [pastSession] }, ...currentGroups];
-      }
-      saveGroups(updatedGroups);
-      this._state.update(st => ({ ...st, groups: updatedGroups }));
+      this._saveCurrentGroupToHistory(code, s.activeMembers, this.liveMatches());
     }
 
-    this._saveCurrentGroupToHistory(code ?? '', s.activeMembers, this.liveMatches());
-
+    // 2. IMMEDIATELY kill the listener so the Firebase update doesn't trigger a duplicate save
     this.stopListening();
-    this.deckIndex.set(0); // reset for next session
-    this._state.update(st => ({ ...st, hasActiveSession: false, isWaiting: false, activeRoomCode: '', matchCount: 0, activeMembers: [], isSolo: true }));
+
+    // 3. Reset the local app state
+    this.deckIndex.set(0);
+    this._state.update(st => ({
+      ...st,
+      hasActiveSession: false,
+      isWaiting: false,
+      activeRoomCode: '',
+      matchCount: 0,
+      activeMembers: [],
+      isSolo: true
+    }));
+
+    // 4. Force leaveRoom. Never destroy the room!
+    // We will let the room naturally expire instead of ending it,
+    // thereby totally removing the `endRoom` threat from occurring.
+    if (code) {
+      console.log('Force leaving room:', code);
+      try {
+        await this.fb.leaveRoom(code, this.myUid);
+      } catch (e) {
+        console.error('Failed to leave room gracefully, soft error ignored', e);
+      }
+    }
   }
 
   setUsername(name: string): void {
@@ -354,6 +376,18 @@ export class AppStateService {
   setSearchRadius(radius: number): void { this._state.update(s => ({ ...s, searchRadius: radius })); }
   addMatch(): void { this._state.update(s => ({ ...s, matchCount: s.matchCount + 1 })); }
   friendJoined(member: GroupMember): void { this._state.update(s => ({ ...s, isSolo: false, activeMembers: [...s.activeMembers, member] })); }
+
+  // 💥 NEW: Keep a running list of who you've sent invites to
+  saveFriend(friend: SavedFriend): void {
+    this.savedFriends.update(list => {
+      // Remove them if they're already in the list to avoid duplicates
+      const filtered = list.filter(f => f.friendCode !== friend.friendCode);
+      // Put the newly invited friend at the top of the list!
+      const newList = [friend, ...filtered].slice(0, 50); // Keep max 50 recent friends
+      localStorage.setItem(this.SAVED_FRIENDS_KEY, JSON.stringify(newList));
+      return newList;
+    });
+  }
 
   private _saveCurrentGroupToHistory(code: string, activeMembers: GroupMember[], liveMatches: SessionMatch[]) {
     if (!code || activeMembers.length === 0) return;

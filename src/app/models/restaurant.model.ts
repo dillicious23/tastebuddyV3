@@ -39,6 +39,12 @@ export interface GroupMember {
   avatar?: string;
 }
 
+export interface SavedFriend {
+  friendCode: string;
+  username: string;
+  avatar: string;
+}
+
 export interface SessionMatch {
   restaurant: Restaurant;
   agreedCount: number;

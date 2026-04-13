@@ -763,3 +763,25 @@ ion-tab-bar {
         opacity: 0.55;
     }
 }
+
+/* ── Custom Ionic Toast ─────────────────────────────────────── */
+ion-toast.custom-toast {
+    --background: rgba(20, 25, 39, 0.95);
+    --border-radius: 100px;
+    --border-color: rgba(74, 222, 128, 0.3);
+    --border-width: 1px;
+    --border-style: solid;
+    --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --color: #F1F5F9;
+
+    /* Target internal shadow parts to ensure text/icons look great */
+    &::part(message) {
+        font-weight: 600;
+        font-size: 13px;
+        color: #F1F5F9;
+    }
+    
+    &::part(icon) {
+        color: #4ADE80;
+    }
+}

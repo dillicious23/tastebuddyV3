@@ -7,6 +7,8 @@ import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
 import { USERNAME_SUGGESTIONS } from '../../data/mock-data';
 import { FirebaseSessionService } from '../../services/firebase-session.service';
+import { ToastController } from '@ionic/angular';
+import { copyToClipboard } from '../../utils/clipboard';
 
 @Component({
   selector: 'app-profile',
@@ -19,15 +21,33 @@ export class ProfileComponent {
   private router = inject(Router);
   readonly state = inject(AppStateService);
   private fb = inject(FirebaseSessionService);
+  private toastController = inject(ToastController);
 
   codeCopied = signal(false);
 
-  copyFriendCode(): void {
-    navigator.clipboard?.writeText(this.state.friendCode).then(() => {
-      this.codeCopied.set(true);
-      setTimeout(() => this.codeCopied.set(false), 2000);
-    });
+  async copyFriendCode() {
+    const code = this.state.friendCode; // This is a standard variable, not a Signal!
+    if (!code) return;
+
+    try {
+      // 1. Copy to clipboard
+      const success = await copyToClipboard(code);
+      if (!success) return;
+
+      // 2. Show a success toast
+      const toast = await this.toastController.create({
+        message: 'Friend Code copied to clipboard!',
+        duration: 2000,
+        cssClass: 'custom-toast',
+        position: 'top',
+        icon: 'checkmark-circle'
+      });
+      await toast.present();
+    } catch (e) {
+      console.error('Failed to copy friend code', e);
+    }
   }
+
 
   readonly allAvatars = [
     '🦦', '🐻', '🦊', '🐼', '🐨', '🐯', '🦁', '🐸',

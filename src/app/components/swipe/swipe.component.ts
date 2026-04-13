@@ -8,9 +8,10 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
-import { Restaurant } from '../../models/restaurant.model';
+import { Restaurant, SavedFriend } from '../../models/restaurant.model';
 import { CardContentComponent } from './card-content.component';
 import { Share } from '@capacitor/share';
+import { copyToClipboard } from '../../utils/clipboard';
 import { FirebaseSessionService } from '../../services/firebase-session.service';
 
 type SwipeDir = 'left' | 'right' | null;
@@ -63,6 +64,10 @@ export class SwipeComponent implements OnInit, OnDestroy {
       await this.fb.sendPushInvite(user.uid, this.state.username(), this.state.activeRoomCode());
       this.inviteResult.set('sent');
       this.inviteCode.set('');
+      
+      // 💥 NEW: Save this user so we can easily invite them again next time!
+      this.state.saveFriend({ friendCode: user.friendCode, username: user.username, avatar: user.avatar });
+      
     } catch (e) {
       console.error('Invite failed:', e);
       this.inviteResult.set('not_found');
@@ -71,9 +76,15 @@ export class SwipeComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 💥 NEW: Quick-invite a friend from history
+  async inviteSavedFriend(f: SavedFriend): Promise<void> {
+    this.inviteCode.set(f.friendCode);
+    await this.lookupAndInvite();
+  }
+
   async copyRoomLink(): Promise<void> {
     const link = `https://tastebuddyv2.web.app/join/${this.state.activeRoomCode()}`;
-    await navigator.clipboard?.writeText(link);
+    await copyToClipboard(link);
     this.roomLinkCopied.set(true);
     setTimeout(() => this.roomLinkCopied.set(false), 2000);
   }
@@ -286,21 +297,17 @@ export class SwipeComponent implements OnInit, OnDestroy {
       }
     } catch (err) {
       // Fallback if share sheet fails
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(inviteLink);
-        alert(`Invite link copied to clipboard!\n\n${inviteLink}`);
-      }
+      const success = await copyToClipboard(inviteLink);
+      if (success) alert(`Invite link copied to clipboard!\n\n${inviteLink}`);
     }
   }
 
   // 💥 NEW: Dedicated copy method with visual feedback
   async copyCode(): Promise<void> {
     const code = this.state.activeRoomCode();
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(code);
-      this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 2000); // Reset after 2 seconds
-    }
+    await copyToClipboard(code);
+    this.copied.set(true);
+    setTimeout(() => this.copied.set(false), 2000); // Reset after 2 seconds
   }
 
   // ── Leave ─────────────────────────────────────────────────

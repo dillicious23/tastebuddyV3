@@ -41,27 +41,21 @@
     cursor: pointer;
     padding: 0 8px;
     min-width: 56px;
-    transition: opacity 120ms;
+    transition: color 150ms ease;
+    color: #475569;
 
     span {
         font-size: 9px;
-        color: var(--tx8);
+        color: inherit;
         font-family: inherit;
     }
 
-    &.active-green span {
+    &.active {
         color: #4ADE80;
-        font-weight: 600;
-    }
 
-    &.active-blue span {
-        color: #60A5FA;
-        font-weight: 600;
-    }
-
-    &.active-purple span {
-        color: #A78BFA;
-        font-weight: 600;
+        span {
+            font-weight: 600;
+        }
     }
 
     &.nav-disabled {

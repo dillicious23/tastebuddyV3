@@ -2,6 +2,7 @@ import { Component, inject, signal, Output, EventEmitter, OnDestroy, OnInit, Cha
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AppStateService } from '../../services/app-state.service';
+import { copyToClipboard } from '../../utils/clipboard';
 import { ForkupGroup, GroupMember } from '../../models/restaurant.model';
 import { generateRoomCode } from '../../data/mock-data';
 import { GoogleMapsModule, MapMarker, MapCircle } from '@angular/google-maps';
@@ -360,7 +361,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   async copyRoomLink(): Promise<void> {
     const link = `https://tastebuddyv2.web.app/join/${this.state.activeRoomCode()}`;
-    await navigator.clipboard?.writeText(link);
+    await copyToClipboard(link);
     this.roomLinkCopied.set(true);
     setTimeout(() => this.roomLinkCopied.set(false), 2000);
   }
@@ -406,7 +407,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         await Share.share({ title: 'Join my Tastebuddy room!', text: `Help me decide where to eat! Tap the link or enter code ${code}`, url: inviteLink });
       } else { throw new Error('Not running on native'); }
     } catch (error) {
-      navigator.clipboard.writeText(inviteLink).then(() => alert(`Invite link copied!\n\n${inviteLink}`)).catch(() => alert(`Join room: ${code}`));
+      copyToClipboard(inviteLink).then(() => alert(`Invite link copied!\n\n${inviteLink}`)).catch(() => alert(`Join room: ${code}`));
     }
   }
   goGroupDetail(id: string): void { this.router.navigate(['/tabs/groups', id]); }
