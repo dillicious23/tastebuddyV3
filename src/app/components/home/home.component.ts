@@ -66,10 +66,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     if (savedLoc && savedRest.length > 0) {
       if (this.state.isDataStale()) {
-        console.log('[HOME] Filters changed! Auto-refreshing map...');
         this.refreshMap();
       } else {
-        console.log('[HOME] Data is still fresh. Restoring map.');
         this.userLocation = savedLoc;
         this.mapOptions = { ...this.mapOptions, center: this.userLocation };
         this.fullRestaurantList = savedRest;
@@ -100,7 +98,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   // 💥 THE FUSE & FALLBACK LOGIC
   // 💥 THE FUSE & NATIVE CAPACITOR LOGIC
   async getUserLocation() {
-    console.log('[GEO] 1. getUserLocation() called');
     this.loadingLocation.set(true);
 
     let locationResolved = false;
@@ -126,7 +123,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       locationResolved = true;
       clearTimeout(fuse);
-      console.log('[GEO] 3. Fuse defused. Got native coordinates.');
 
       this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
       this.mapOptions = { ...this.mapOptions, center: this.userLocation };
@@ -143,7 +139,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   async handleLocationFallback() {
-    console.log('[FALLBACK] Triggered! Using Mesa, AZ');
     this.userLocation = { lat: 33.4152, lng: -111.8315 };
     this.mapOptions = { ...this.mapOptions, center: this.userLocation };
 

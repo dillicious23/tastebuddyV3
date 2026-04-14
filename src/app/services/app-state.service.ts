@@ -36,7 +36,7 @@ function loadGroups(): ForkupGroup[] {
 function saveGroups(groups: ForkupGroup[]): void { localStorage.setItem(GROUPS_KEY, JSON.stringify(groups)); }
 
 const BLANK_STATE: AppState = {
-  username: getStoredUsername(), hasActiveSession: false, isWaiting: false, activeRoomCode: '', activeMembers: [], matchCount: 0, isSolo: true, searchRadius: 2, groups: loadGroups()
+  username: getStoredUsername(), hasActiveSession: false, isWaiting: false, activeRoomCode: '', activeMembers: [], matchCount: 0, isSolo: true, searchRadius: parseFloat(localStorage.getItem('tb_searchRadius') ?? '2'), groups: loadGroups()
 };
 
 // ── Stats Persistence ──────────────────────────────────────────
@@ -105,31 +105,17 @@ export class AppStateService {
     const friendsMap = new Map<string, GroupMember>();
     const allGroups = this.groups();
 
-    console.log("=== KNOWN FRIENDS DEBUG ===");
-    console.log("1. Total Past Groups in History:", allGroups.length);
-    console.log("2. My Device UID:", this.myUid);
-
     // Loop through all your past groups
     for (const group of allGroups) {
-      console.log(`3. Checking Group [${group.id}]:`, group.members);
-
       for (const m of group.members) {
-        console.log(`   -> Evaluating Member: ${m.username} | UID: ${m.uid}`);
-
         // Don't add yourself, and ensure they have a UID recorded
-        if (!m.uid) {
-          console.log(`   ❌ Skipped ${m.username}: They have no UID saved in history.`);
-        } else if (m.uid === this.myUid) {
-          console.log(`   ❌ Skipped ${m.username}: This is you!`);
-        } else {
+        if (m.uid && m.uid !== this.myUid) {
           friendsMap.set(m.uid, m);
-          console.log(`   ✅ SUCCESS: Added ${m.username} to invite list!`);
         }
       }
     }
 
     const finalArray = Array.from(friendsMap.values()).sort((a, b) => a.username.localeCompare(b.username));
-    console.log("4. Final Invite List Array:", finalArray);
 
     return finalArray;
   });
@@ -185,13 +171,6 @@ export class AppStateService {
     this._roomSub = this.fb.listenRoom$(code).subscribe(room => {
       if (!room) return;
 
-      console.log('[ROOM SNAPSHOT]', {
-        status: room.status,
-        memberCount: Object.keys(room.members ?? {}).length,
-        memberUIDs: Object.keys(room.members ?? {}),
-        currentIsWaiting: this._state().isWaiting
-      });
-
       const wasActive = this._state().hasActiveSession;
       const isEnded = room.status === 'ended';
       const isSwiping = room.status === 'swiping';
@@ -223,6 +202,7 @@ export class AppStateService {
         }
       }
 
+      // If the deck hasn't been set yet and we explicitly have 0 restaurants from Firestore
       const dbRestaurants = Object.values(room.restaurants ?? {});
 
       if (dbRestaurants.length > 0) {
@@ -231,6 +211,8 @@ export class AppStateService {
         if (!alreadyLoaded) {
           this.deck.set(dbRestaurants);
         }
+      } else if (room.status !== 'waiting' && this.deck().length > 0) {
+         this.deck.set([]);
       }
 
       // 💥 KEY FIX: isWaiting can only become FALSE when the room status explicitly
@@ -295,6 +277,7 @@ export class AppStateService {
     }));
 
     this.deckIndex.set(0); // fresh deck for the new session
+    this.deck.set([]); // Wait for firebase to send real deck data
     this.listenToRoom(code);
     return code;
   }
@@ -311,6 +294,8 @@ export class AppStateService {
     const room = await this.fb.joinRoom(code, this.myUid, this._state().username);
     if (!room) return false;
     const members = this._dbMembersToGroupMembers(room.members);
+    this.deckIndex.set(0);
+    this.deck.set([]); // clear deck prior to loading
     this._state.update(s => ({ ...s, hasActiveSession: true, isWaiting: room.status === 'waiting', activeRoomCode: code, matchCount: 0, activeMembers: members, isSolo: members.length <= 1 }));
     this.listenToRoom(code);
     return true;
@@ -342,6 +327,7 @@ export class AppStateService {
 
     // 3. Reset the local app state
     this.deckIndex.set(0);
+    this.deck.set([]); // wipe lingering card data
     this._state.update(st => ({
       ...st,
       hasActiveSession: false,
@@ -352,13 +338,15 @@ export class AppStateService {
       isSolo: true
     }));
 
-    // 4. Force leaveRoom. Never destroy the room!
-    // We will let the room naturally expire instead of ending it,
-    // thereby totally removing the `endRoom` threat from occurring.
+    // 4. Force leaveRoom for participant OR endRoom for host
     if (code) {
-      console.log('Force leaving room:', code);
       try {
-        await this.fb.leaveRoom(code, this.myUid);
+        const room = await this.fb.getRoom(code);
+        if (room?.hostId === this.myUid) {
+          await this.fb.endRoom(code);
+        } else {
+          await this.fb.leaveRoom(code, this.myUid);
+        }
       } catch (e) {
         console.error('Failed to leave room gracefully, soft error ignored', e);
       }
@@ -373,7 +361,10 @@ export class AppStateService {
       console.warn('Could not sync username to Firestore:', err)
     );
   }
-  setSearchRadius(radius: number): void { this._state.update(s => ({ ...s, searchRadius: radius })); }
+  setSearchRadius(radius: number): void { 
+    localStorage.setItem('tb_searchRadius', String(radius));
+    this._state.update(s => ({ ...s, searchRadius: radius })); 
+  }
   addMatch(): void { this._state.update(s => ({ ...s, matchCount: s.matchCount + 1 })); }
   friendJoined(member: GroupMember): void { this._state.update(s => ({ ...s, isSolo: false, activeMembers: [...s.activeMembers, member] })); }
 
@@ -392,9 +383,9 @@ export class AppStateService {
   private _saveCurrentGroupToHistory(code: string, activeMembers: GroupMember[], liveMatches: SessionMatch[]) {
     if (!code || activeMembers.length === 0) return;
     const pastSession = { date: new Date(), roomCode: code, matches: liveMatches, timeAgo: 'just now' };
-    const usernameKey = activeMembers.map(m => m.username).sort().join(',');
+    const uidKey = activeMembers.map(m => m.uid).sort().join(',');
     const currentGroups = this._state().groups;
-    const existingIdx = currentGroups.findIndex(g => g.members.map(m => m.username).sort().join(',') === usernameKey);
+    const existingIdx = currentGroups.findIndex(g => g.members.map(m => m.uid).sort().join(',') === uidKey);
 
     let updatedGroups: ForkupGroup[];
     if (existingIdx >= 0) {

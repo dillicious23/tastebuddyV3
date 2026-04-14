@@ -144,7 +144,7 @@
   </div>
 
   <!-- ── Card stack ────────────────────────────────────────────── -->
-  <div class="card-area" *ngIf="!outOfCards() && !isWaiting()">
+  <div class="card-area" *ngIf="deck.length > 0 && !outOfCards() && !isWaiting()">
 
     <!-- Third card (back) -->
     <div class="restaurant-card back-card-2"
@@ -177,12 +177,12 @@
   </div>
 
   <!-- ── Out of cards ──────────────────────────────────────────── -->
-  <div class="out-of-cards" *ngIf="outOfCards()">
+  <div class="out-of-cards" *ngIf="outOfCards() || (deck.length === 0 && !isWaiting())">
     <div class="empty-stack">
       <span style="font-size:30px">🍽️</span>
-      <span class="empty-label">All done</span>
+      <span class="empty-label">{{ deck.length === 0 ? 'No luck' : 'All done' }}</span>
     </div>
-    <h2 class="out-title">You've seen everything nearby</h2>
+    <h2 class="out-title">{{ deck.length === 0 ? 'No restaurants found' : 'You\'ve seen everything nearby' }}</h2>
 
     <p class="out-sub">
       {{ deck.length }} restaurants ·
@@ -242,7 +242,7 @@
   </div>
 
   <!-- ── Action buttons ────────────────────────────────────────── -->
-  <div class="action-row" *ngIf="!outOfCards() && !isWaiting()">
+  <div class="action-row" *ngIf="deck.length > 0 && !outOfCards() && !isWaiting()">
     <!-- Pass -->
     <button class="action-btn pass" (click)="btnSwipe('left')">
       <svg width="22" height="22" viewBox="0 0 22 22">

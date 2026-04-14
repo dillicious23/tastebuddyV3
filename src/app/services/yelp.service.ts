@@ -1,29 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import { Restaurant } from '../models/restaurant.model';
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../core/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, fns } from '../core/firebase';
 
 @Injectable({ providedIn: 'root' })
 export class YelpService {
-    private http = inject(HttpClient);
-
-    // Your actual Yelp API Key
-    private apiKey = 'BcGuIBO_29gP4DdK-1IHudB0S9CRw3WZUtwfxXCaMBOkGePM706cRTrUZVx6NWH-45LRox0LPhr1wb-e2SJOx2QjP4_2Id29SOmtlGaTsKxwnrxrpci9drKjCQ1pZXYx';
-
-    get baseUrl(): string {
-        const yelpDirectUrl = 'https://api.yelp.com/v3/businesses/search';
-
-        // If we are on a real iOS or Android device, talk to Yelp directly!
-        if (Capacitor.isNativePlatform()) {
-            return yelpDirectUrl;
-        }
-
-        // If we are testing on localhost in the browser, use the proxy
-        return `https://cors-anywhere.herokuapp.com/${yelpDirectUrl}`;
-    }
 
     private getVisuals(categories: any[]) {
         const cats = categories.map((c: any) => c.alias.toLowerCase()).join(' ');
@@ -53,12 +35,10 @@ export class YelpService {
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    // 💥 NEW: Variable to hold our overrides in memory
     private customImages: { [key: string]: string } | null = null;
 
-    // 💥 NEW: Fetches the overrides from Firestore
     private async loadCustomImages() {
-        if (this.customImages) return; // Already loaded? Skip!
+        if (this.customImages) return;
 
         try {
             const snap = await getDoc(doc(db, 'config', 'images'));
@@ -71,26 +51,6 @@ export class YelpService {
             console.error('Could not load custom images from Firestore', e);
             this.customImages = {};
         }
-    }
-
-    // 💥 NEW: Our Custom Image Interceptor!
-    private getCustomImage(restaurantName: string, originalYelpUrl: string): string {
-        const name = restaurantName.toLowerCase();
-
-        // Check if the restaurant matches our custom list
-        if (name.includes('mcdonald')) {
-            return 'assets/fast-food/mcdonalds.jpg'; // Path to your local image!
-        }
-        if (name.includes('wendy')) {
-            // You can also paste Firebase Storage URLs here if you chose the Cloud route!
-            return 'https://firebasestorage.googleapis.com/v0/b/your-app/wendys.jpg';
-        }
-        if (name.includes('taco bell')) {
-            return 'assets/fast-food/image_1d728f.jpg'; // Using the image you uploaded!
-        }
-
-        // If it's a local mom-and-pop shop we don't have an image for, just use Yelp's!
-        return originalYelpUrl;
     }
 
     async getRestaurants(
@@ -109,65 +69,32 @@ export class YelpService {
             catQuery = Array.isArray(cuisines) ? cuisines.join(',') : cuisines;
         }
 
-        let url = `${this.baseUrl}?radius=${radiusMeters}&limit=50&sort_by=distance`;
-
-        if (catQuery) {
-            url += `&categories=${encodeURIComponent(catQuery)}`;
-        } else {
-            url += `&categories=restaurants`; // Fallback so we don't get dentists
-        }
-
-        if (openNow) {
-            url += `&open_now=true`;
-        }
-
-        if (price && price.length > 0) {
-            url += `&price=${price.join(',')}`;
-        }
-
-        if (location) {
-            url += `&location=${encodeURIComponent(location)}`;
-        } else if (lat !== null && lng !== null) {
-            url += `&latitude=${lat}&longitude=${lng}`;
-        } else {
+        if (!location && (lat === null || lng === null)) {
             console.error('🚨 LOCATION BLOCKED: No GPS coordinates or city provided!');
-            return []; // Fail safely before we even ask Yelp
+            return [];
         }
 
         try {
-            console.log('=== 📡 YELP API DEBUG ===');
-            console.log('1. Outbound URL:', url);
+            
+            const searchFn = httpsCallable(fns, 'yelpSearch');
+            
+            const requestData = {
+                latitude: lat,
+                longitude: lng,
+                location: location,
+                radiusMeters: radiusMeters,
+                categories: catQuery || 'restaurants',
+                openNow: openNow,
+                price: (price && price.length > 0) ? price.join(',') : undefined
+            };
 
-            let responseData: any;
-
-            if (Capacitor.isNativePlatform()) {
-                const options = {
-                    url: url,
-                    headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
-                        'Accept': 'application/json'
-                    }
-                };
-                const nativeResponse = await CapacitorHttp.get(options);
-                console.log('2. Raw Native Response:', nativeResponse);
-                responseData = nativeResponse.data;
-            } else {
-                const headers = new HttpHeaders({
-                    Authorization: `Bearer ${this.apiKey}`,
-                    accept: 'application/json'
-                });
-
-                // If this fails, it will jump straight to the catch block!
-                responseData = await firstValueFrom(this.http.get(url, { headers }));
-                console.log('2. Raw Proxy Response:', responseData);
-            }
+            const result = await searchFn(requestData);
+            const responseData = result.data as any;
 
             if (!responseData || !responseData.businesses) {
                 console.error('3. 🚨 Yelp rejected the request. Body:', responseData);
                 return [];
             }
-
-            console.log('3. ✅ Yelp Success! Found restaurants:', responseData.businesses.length);
 
             const strictBusinesses = responseData.businesses.filter((b: any) => {
                 if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
@@ -179,27 +106,20 @@ export class YelpService {
             });
 
             await this.loadCustomImages();
-            console.log('4. 🖼️ Custom Images from Firestore:', this.customImages);
 
             return strictBusinesses.map((b: any) => {
                 const hasReservations = b.transactions && b.transactions.includes('restaurant_reservation');
                 const visuals = this.getVisuals(b.categories || []);
 
-                // 💥 2. THE INTERCEPTOR (Ensure this didn't get deleted earlier!)
                 let finalImageUrl = b.image_url;
 
                 if (this.customImages) {
-                    // Remove ALL spaces and apostrophes from the Yelp name!
-                    // "Dairy Queen Store" -> "dairyqueenstore"
-                    // "McDonald's" -> "mcdonalds"
                     const normalizedYelpName = b.name.toLowerCase().replace(/['\s-]/g, '');
 
                     for (const [triggerWord, customUrl] of Object.entries(this.customImages)) {
-                        // Remove spaces from your database trigger word just in case
                         const normalizedTrigger = triggerWord.toLowerCase().replace(/['\s-]/g, '');
 
                         if (normalizedYelpName.includes(normalizedTrigger)) {
-                            console.log(`🍟 MATCH FOUND! Swapping image for: ${b.name}`);
                             finalImageUrl = customUrl;
                             break;
                         }
@@ -215,10 +135,7 @@ export class YelpService {
                     dist: (b.distance / 1609.34).toFixed(1) + ' mi',
                     price: b.price || '$$',
                     rating: b.rating,
-
-                    // 💥 3. Ensure this uses finalImageUrl, NOT b.image_url
                     imageUrl: finalImageUrl,
-
                     address: b.location?.display_address ? b.location.display_address.join(', ') : '',
                     lat: b.coordinates.latitude,
                     lng: b.coordinates.longitude,
@@ -232,14 +149,8 @@ export class YelpService {
             });
 
         } catch (error: any) {
-            console.error('🚨 Network or Proxy Error details:', error);
-
-            // Helpful hint if you are locked out of the proxy
-            if (!Capacitor.isNativePlatform() && error?.status === 403) {
-                console.warn('🔓 You need to unlock the CORS proxy! Visit: https://cors-anywhere.herokuapp.com/corsdemo');
-            }
-
+            console.error('🚨 Proxy Firebase Function Error details:', error);
             return [];
         }
     }
-}
+}

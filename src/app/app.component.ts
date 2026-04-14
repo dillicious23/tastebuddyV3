@@ -22,6 +22,19 @@ export class AppComponent implements OnInit {
 
 
   async initializeApp() {
+    // 💥 FIX: Prevent rogue web scripts (Google Maps etc.) from triggering the raw HTML5 "localhost" location prompt
+    if (Capacitor.isNativePlatform() && typeof window !== 'undefined' && window.navigator && window.navigator.geolocation) {
+      window.navigator.geolocation.getCurrentPosition = (success, error, options) => {
+        Geolocation.getCurrentPosition(options as any).then(pos => {
+          if (success) success({ coords: { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, altitude: pos.coords.altitude || null, altitudeAccuracy: pos.coords.altitudeAccuracy || null, heading: pos.coords.heading || null, speed: pos.coords.speed || null }, timestamp: pos.timestamp } as any);
+        }).catch(err => {
+          if (error) error({ code: 1, message: err.message, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as any);
+        });
+      };
+      // Suppress watches just in case
+      window.navigator.geolocation.watchPosition = () => { return 0; };
+    }
+
     // 1. Handle Background Resumes (App was minimized)
     App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
       this.handleDeepLink(event.url);
@@ -60,9 +73,6 @@ export class AppComponent implements OnInit {
       // 💥 NEW: Only request permissions manually if running on a phone
       if (Capacitor.isNativePlatform()) {
         const status = await Geolocation.requestPermissions();
-        console.log('Location permission status:', status.location);
-      } else {
-        console.log('Running on web: Permission will be requested automatically when needed.');
       }
     } catch (err) {
       console.error('Error requesting location permissions:', err);
@@ -113,7 +123,7 @@ export class AppComponent implements OnInit {
       }
 
       FirebaseMessaging.addListener('notificationReceived', (event) => {
-        console.log('Push received: ', event.notification);
+        // Push notification received
       });
 
       FirebaseMessaging.addListener('notificationActionPerformed', (event: any) => {

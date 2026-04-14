@@ -379,6 +379,56 @@
     }
 }
 
+// ── Instagram footer ───────────────────────────────────────────
+.instagram-footer {
+    flex-shrink: 0;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+    background: #0A0D14;
+    padding: 0 12px;
+}
+
+.instagram-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 150ms;
+
+    &:active {
+        opacity: 0.6;
+    }
+}
+
+.instagram-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.instagram-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--tx4);
+}
+
+.instagram-handle {
+    font-size: 13px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.instagram-chevron {
+    flex-shrink: 0;
+}
+
 .identity-note {
     display: flex;
     gap: 7px;

@@ -26,7 +26,7 @@ import { NavTab } from '../../models/restaurant.model';
     <button class="nav-item" [class.active-green]="activeTab === 'home'" (click)="navigate('home')">
       <svg width="22" height="22" viewBox="0 0 22 22">
         <path d="M3 10L11 3L19 10V19H14V14H8V19H3V10Z" [attr.fill]="activeTab === 'home' ? '#4ADE80' : 'none'"
-          [attr.stroke]="activeTab === 'home' ? 'none' : '#1A2232'" stroke-width="1.6" stroke-linejoin="round" />
+          [attr.stroke]="activeTab === 'home' ? 'none' : '#475569'" stroke-width="1.6" stroke-linejoin="round" />
       </svg>
       <span>Home</span>
     </button>
@@ -43,8 +43,8 @@ import { NavTab } from '../../models/restaurant.model';
       </ng-container>
       <ng-template #swipeOutline>
         <svg width="22" height="22" viewBox="0 0 22 22">
-          <rect x="4" y="4" width="14" height="14" rx="4" stroke="#1A2232" stroke-width="1.6" />
-          <path d="M8 11h6M13 8l3 3-3 3" stroke="#1A2232" stroke-width="1.6" stroke-linecap="round"
+          <rect x="4" y="4" width="14" height="14" rx="4" stroke="#475569" stroke-width="1.6" fill="none" />
+          <path d="M8 11h6M13 8l3 3-3 3" stroke="#475569" stroke-width="1.6" stroke-linecap="round"
             stroke-linejoin="round" />
         </svg>
       </ng-template>
@@ -77,9 +77,9 @@ import { NavTab } from '../../models/restaurant.model';
     <button class="nav-item" [class.active-green]="activeTab === 'profile'" (click)="navigate('profile')">
       <svg width="22" height="22" viewBox="0 0 22 22">
         <circle cx="11" cy="8" r="3.5" [attr.fill]="activeTab === 'profile' ? '#4ADE80' : 'none'"
-          [attr.stroke]="activeTab === 'profile' ? 'none' : '#1A2232'" stroke-width="1.6" />
+          [attr.stroke]="activeTab === 'profile' ? 'none' : '#475569'" stroke-width="1.6" />
         <path d="M4 18C4 15 7.1 13 11 13C14.9 13 18 15 18 18"
-          [attr.stroke]="activeTab === 'profile' ? '#4ADE80' : '#1A2232'" stroke-width="1.6" stroke-linecap="round" />
+          [attr.stroke]="activeTab === 'profile' ? '#4ADE80' : '#475569'" stroke-width="1.6" stroke-linecap="round" />
       </svg>
       <span>Profile</span>
     </button>
