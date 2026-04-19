@@ -95,31 +95,27 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 💥 THE FUSE & FALLBACK LOGIC
-  // 💥 THE FUSE & NATIVE CAPACITOR LOGIC
   async getUserLocation() {
     this.loadingLocation.set(true);
-
     let locationResolved = false;
 
-    // 4-Second Fuse for Desktop Testing
+    // 💥 FIX: Increased fuse to 10 seconds to give iOS hardware time to lock on
     const fuse = setTimeout(() => {
       if (!locationResolved) {
-        console.warn('[GEO] 2. MANUAL TIMEOUT (4s) hit! Forcing fallback.');
+        console.warn('[GEO] 2. MANUAL TIMEOUT (10s) hit! Forcing fallback.');
         locationResolved = true;
         this.handleLocationFallback();
       }
-    }, 4000);
+    }, 10000);
 
     try {
-      // 💥 THIS IS THE FIX: Ask the native device, not the web browser!
       const position = await Geolocation.getCurrentPosition({
         enableHighAccuracy: Capacitor.isNativePlatform(),
-        timeout: 4000,
-        maximumAge: 0
+        timeout: 10000,       // 💥 FIX: Match the 10-second fuse
+        maximumAge: 60000     // 💥 FIX: Allow cached locations up to 60 seconds old to speed up loading
       });
 
-      if (locationResolved) return; // Ignore if the fuse already blew
+      if (locationResolved) return;
 
       locationResolved = true;
       clearTimeout(fuse);
@@ -139,10 +135,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   async handleLocationFallback() {
-    this.userLocation = { lat: 33.4152, lng: -111.8315 };
+    // 💥 FIX: Grab their last known location from memory. If it's their very first time, default to Mesa.
+    const lastLoc = this.state.lastLocation();
+
+    if (lastLoc) {
+      this.userLocation = lastLoc;
+    } else {
+      this.userLocation = { lat: 33.4152, lng: -111.8315 };
+    }
+
     this.mapOptions = { ...this.mapOptions, center: this.userLocation };
 
-    // Skip dropping animation for fallback to load instantly
     const results = await this.fetchYelpData(this.userLocation.lat, this.userLocation.lng, true);
     if (results) this.nearbyRestaurants = [...results];
   }

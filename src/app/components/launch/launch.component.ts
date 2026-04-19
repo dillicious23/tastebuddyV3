@@ -69,7 +69,11 @@ import { copyToClipboard } from '../../utils/clipboard';
 
     <p class="no-account">No account needed. Saved to this device.</p>
 
-    <button class="btn-primary" (click)="proceed()">Looks good · let's go →</button>
+    <button class="btn-primary" 
+            (click)="proceed()" 
+            [disabled]="!username || username.trim() === ''">
+      Looks good · let's go →
+    </button>
   </div>
 </div>
   `,
@@ -149,10 +153,15 @@ export class LaunchComponent implements OnInit {
   }
 
   proceed(): void {
-    const name = this.username.trim() || this.displaySuggestions()[0];
+    // 💥 REMOVED: The fallback to the random suggestions. 
+    const name = this.username.trim();
+
+    // 💥 ADDED: A hard failsafe just in case they manage to click it
+    if (!name) return;
+
     this.stateService.setUsername(name);
 
-    // 💥 CRITICAL: Save the chosen avatar so ProfileComponent loads it later!
+    // CRITICAL: Save the chosen avatar so ProfileComponent loads it later!
     localStorage.setItem('userAvatar', this.userAvatar());
     localStorage.setItem('tb_has_launched', 'true');
 

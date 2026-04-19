@@ -75,9 +75,9 @@ export class YelpService {
         }
 
         try {
-            
+
             const searchFn = httpsCallable(fns, 'yelpSearch');
-            
+
             const requestData = {
                 latitude: lat,
                 longitude: lng,
@@ -99,6 +99,20 @@ export class YelpService {
             const strictBusinesses = responseData.businesses.filter((b: any) => {
                 if (!b.coordinates?.latitude || !b.coordinates?.longitude) return false;
                 if (!b.rating || b.rating < 2.5) return false;
+
+                // 💥 NEW: The Gas Station Blocklist
+                if (b.categories) {
+                    const isGasStation = b.categories.some((c: any) =>
+                        c.alias.includes('servicestation') ||
+                        c.alias.includes('convenience') ||
+                        c.title.toLowerCase().includes('gas station') ||
+                        c.title.toLowerCase().includes('convenience')
+                    );
+
+                    // If it's a gas station, throw it out immediately!
+                    if (isGasStation) return false;
+                }
+
                 if (lat === null || lng === null) return true;
 
                 const exactMeters = this.getExactDistance(lat, lng, b.coordinates.latitude, b.coordinates.longitude);
@@ -119,7 +133,8 @@ export class YelpService {
                     for (const [triggerWord, customUrl] of Object.entries(this.customImages)) {
                         const normalizedTrigger = triggerWord.toLowerCase().replace(/['\s-]/g, '');
 
-                        if (normalizedYelpName.includes(normalizedTrigger)) {
+                        // 💥 FIX: Guard against accidental blank fields in your Firestore database!
+                        if (normalizedTrigger.length > 2 && normalizedYelpName.includes(normalizedTrigger)) {
                             finalImageUrl = customUrl;
                             break;
                         }
@@ -153,4 +168,4 @@ export class YelpService {
             return [];
         }
     }
-}
+}
